@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Comment Summarization</title>
+</head>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+
+<header>
+    <img src="/static/west.png"/>
+</header>
+
+<body>
+    <div class="centered-div">
+        <h1>Comment Summarization</h1>
+        <form action = "http://localhost:5000/upload_articles" method = "POST"
+         enctype = "multipart/form-data">
+            <input type = "file" name = "file" />
+            <input type = "submit"/>
+        </form>
+        <form action = "http://localhost:5000/upload_comments" method = "POST"
+         enctype = "multipart/form-data">
+            <input type = "file" name = "file" />
+            <input type = "submit"/>
+        </form>
+        <form action = "http://localhost:5000/topic_number" method = "POST">
+            <input name="text">
+            <input type="submit">
+        </form>
+        <form action="/summarize" method="post">
+        <b>Select topic clustering method:</b>
+        <select class="form-control" id="cluster_select" name="cluster_select">
+                <option value="hmdp" selected>Hierarchical multi-Dirichlet Process</option>
+                <option value="lda">Latent Dirichlet Allocation</option>
+                <option value="mcl">Markov Cluster Algorithm</option>
+        </select>
+            <input type="submit" class="button" value="Summarize comments">
+        </form>
+    </div>
+</body>
+</html>

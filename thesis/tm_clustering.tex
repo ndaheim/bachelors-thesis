@@ -1,0 +1,112 @@
+News article comments are generally of unstructured nature in regards to their topic. This hinders readers \cite{DBLP:conf/acl/BarkerG16} and summarization systems. For a user, clustering comments by common topics makes it possible to gain an overview over the discussed topics and their reception in terms of e.g. popularity and polarity quickly. Furthermore, it enables selective reading as a user can choose topics of interest. For an (extractive) summarization system, the benefit is two-fold. First and foremost, it aids in ensuring the key requirement of preserving the overall information content. If comments are selected independent of their topic, a ranking algorithm might omit an important topic completely. Often times ranking algorithms favor long comments over short ones \cite{llewellyn_grover_oberlander}. To employ a simplified example, if a set of comments under news articles contains two dominant topics of which one is discussed in lengthy comments and one in rather short comments, the latter might be spared completely if comments are ranked and selected independent of their topic. Furthermore, the structuring allows efficient use of query-optimizing ranking mechanisms. This thesis uses such a mechanism, Maximal Marginal Relevance \cite{Carbonell:1998:UMD:290941.291025} which maximizes query-relevance while minimizing redundancy based on similarity measurement. Without any structure, however, it is not clear what the query should be. For one article it might be the title but for multiple ones? Then again, using the title might omit topics different from it. In contrast, when comments are grouped by topic, the query can be restricted to the topic. The most likely words of the topic-word distribution in a topic model can form the query and comments are ranked within each topic cluster. This brings forth performance as a second advantage of grouping. Summary clusters are selected before ranking comments in only selected clusters which ensures that only comments considered for a summary are ranked. Additionally, ranking algorithms such as MMR \cite{Carbonell:1998:UMD:290941.291025} or LexRank \cite{DBLP:journals/corr/abs-1109-2128} usually require similarity measurement between every considered document. Here, ranking comments only within clusters requires less operations than ranking them across clusters. To engage the previous simplified example, let the $N$ comments be divided into topic A consisting of $K$ comments and topic B consisting of $M$ comments with $N=M+K$. $\binom{N}{2}$ similarities have to be measured to compare all of the $N$ comments \footnote{As the similarity of an object to itsself is 1 as defined in \autoref{SIM} it is sufficient to compare every possible pair other than a comment and itsself.}. When comparing comments only within the two topics, $\binom{K}{2} + \binom{M}{2}$ measurements have to be taken. As $\binom{N}{2} > \binom{K}{2} + \binom{M}{2}$ holds for positive real numbers $M,K$\footnote{A proof can be found in the \hyperref[partitionproof]{Appendix}}, partioning is beneficial performance-wise.
+Thus, it is clearly advantageous for the summarization effort to cluster comments by a common topic. \par
+Nevertheless, there are a number of challenges, as outlined in \hyperref[challenges]{Figure 12}, which form the basis of model selection.
+\begin{figure}[H]
+\label{challenges}
+\begin{mdframed}[nobreak=true,align=center,userdefinedwidth=\textwidth]
+\begin{enumerate}
+\item \textbf{Unknown no. of topics} - The number of topics discussed under an article is generally unknown \cite{DBLP:conf/ecir/AkerKBPBHG16}.
+\item \textbf{Sparsity} - As shown in \autoref{review}, comments are usually sparse, limiting the number of exploitable co-occurences between words for topic modeling \cite{DBLP:journals/tacl/NguyenBDJ15} and hampering similarity measurement. Clustering short comments is generally difficult \cite{DBLP:conf/ecir/AkerKBPBHG16}.
+\item \textbf{Broad conversational structure} - A set of multiple articles and their comments can have a large temporal domain and overlapping topics across articles and comments.
+\end{enumerate}
+\end{mdframed}
+\caption{Main challenges faced in topic clustering in this thesis.}
+\end{figure}
+\noindent
+Related works in single-article comment summarization have commonly employed two types of models. Topic Models due to the probabilistic model of document creation and their ability to find words highly descriptive of topics and graph-clustering which models relations between comments through similarity. More precisely, Latent Dirichlet Allocation \cite{DBLP:conf/icwsm/KhabiriCH11, DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/ecir/AkerKBPBHG16} and the Markov Cluster Algorithm \cite{DBLP:conf/ecir/AkerKBPBHG16} have been applied successfully. Both have outperformed other approaches such as Cosine Distance Clustering \cite{llewellyn_grover_oberlander} or k-means Clustering \cite{llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11}. Therefore, it is natural to examine their applicability for the multi-article domain of the presented work.
+However, Latent Dirichlet Allocation is unable to learn the number of topics. When comments under a single article are modeled, an estimate of the topic number beforehand might be feasible. For multiple articles, such an assumption is presumably too restrictive. Thus, alternatives which are able to determine the number of topics are considered. We choose the afore-mentioned MCL and the nonparametric topic model Hierarchical multi-Dirichlet Process, which is also context-aware. Nevertheless, LDA serves as a baseline to which the MCL the HMDP are compared due to its proven performance. \par
+In order to tackle data sparsity in LDA, both comments and articles are modeled. This provides auxiliary information and co-occurences which has shown to be performance enhancing \cite{DBLP:conf/ecir/AkerKBPBHG16}. Additionally, it bases on the assumption that comments pick up on paragraphs and ideas from articles which should, hence, be included in the model of document creation. The document-topic distribution of articles is not relevant and unused, since only comments are considered in the clustering.
+All three methods perform hard clustering in this thesis. In both topic models, comments are assigned their most likely topic, maximizing $P(t_i|c)$ for comment $c$ and topic $t_i$ under its document-topic distribution. Restricting the number of topics of a comment to one is also used to tackle data sparsity \cite{DBLP:journals/tacl/NguyenBDJ15} and therein common to related works \cite{DBLP:conf/ecir/AkerKBPBHG16, DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11}.
+Furthermore, the texts are preprocessed in the same fashion for all models. Punctuation is removed, words are lowercased, stop words are removed and words are stemmed. The NLTK stop list of english words and the NLTK implementation of the Porter stemmer \cite{Porter:1997:ASS:275537.275705} are used. \\
+The LDA implementation used in this thesis is available at \url{https://github.com/ckling/promoss} as part of the PROMOSS package. In the following, it is described how the MCL and HMDP are used and why the HMDP is introduced.
+
+\subsection{Markov Cluster Algorithm}
+The graph-based Markov Cluster Algorithm has outperformed LDA for clustering comments of one article in \cite{DBLP:conf/ecir/AkerKBPBHG16}. Hence, their method is examined in this thesis. Unlike in both topic models, articles are not considered but only comments. Let $C = \{c_i\}_{i=1...N}$ be the set of comments of all articles. The Markov graph is built up with each comment $c_i$ as a node. Edges are established based on comment similarity. Each comment $c_i$ is compared to each other comment $c_j$ with a set of seven similarity measures \footnote{In the original paper \cite{DBLP:conf/ecir/AkerKBPBHG16} eight were used, however, the reply-relationship could not be replicated based on the dataset used in this thesis.} The graph is thus of the form $(C,E)$ with $E \subseteq C \times C$ denoting the set of edges.
+In the following, let $v_i$ denote the TF vectors of, $t_i$ the set of terms and $n_i$ the set of Named-Entities of $c_i$. The used similarity measures are as follows.
+\begin{enumerate}
+\item Cosine similarity of TF vector representations.
+\item Cosine similarity of TF-IDF vector representations.
+\item A modified version of cosine similarity - \begin{equation}
+\text{cosim}_{\text{mod}} = \begin{cases} 
+      \frac{v_i \cdot v_j}{5} & \text{if } v_i \cdot v_j \leq 5\\
+      1 & \text{else}
+   \end{cases}
+\end{equation}
+\item \begin{equation}
+\text{dice}(c_1,c_2) = 2\frac{|t_1 \cap t_2|}{|c_1|+|c_2|}
+\end{equation}
+\item \begin{equation}
+\text{jaccard}(c_1,c_2) = \frac{|t_1 \cap t_2|}{|t_1 \cup t_2|}
+\end{equation}
+\item \begin{equation}
+\text{Named-Entity Overlap}(c_1,c_2) = \frac{|n_1 \cap n_2|}{|n_1 \cup n_2|}
+\end{equation}
+\item Thread-relationship which returns 1 if two comments $c_i$ and $c_j$ are in the same thread and 0 otherwise.
+\end{enumerate}
+However, a certain degree of redundancy can be expected in a set of such closely related measures.
+Therefore, in addition, a restricted version of graph build-up is investigated which only uses cosine similarity based on TF-IDF vectors and thread-relationship. The latter is a form of implicite metadata modeling which addresses data sparstiy based on the notion that comments in the same thread likely target the same topic.
+The edge weight between two comments indicates their topical similarity. In both cases it is determined by a linear combination \begin{equation}
+e(c_1,c_2) = \sum_i \lambda_i s_i
+\end{equation}
+of all considered similarity measures $s_i$ equal to a linear regression model which is trained to obtain the weights $\lambda_i$. As in \cite{DBLP:conf/ecir/AkerKBPBHG16}, an edge is added when a certain threshold is reached which is reportedly beneficial.
+Once the graph is established, it serves as input to the Markov Cluster Algorithm as developed by van Dongen \cite{vandongen00}. In the end, the comment clusters can be read off the rows of the matrix \cite{DBLP:conf/ecir/AkerKBPBHG16}.
+The overall algorithm of MCL in the context of this thesis is, thus, as outlined in \cite{DBLP:conf/ecir/AkerKBPBHG16}.
+\begin{algorithm}[H]
+\label{mclalgthesis}
+\caption{The Markov Cluster algorithm as used in this thesis and outlined in \cite{DBLP:conf/ecir/AkerKBPBHG16}}
+\begin{algorithmic}
+\REQUIRE A set of comments $C = \{c_i\}_{i=1...N}$, a square Matrix $M$ of order $N$, power parameter $p$, inflation parameter $r$, maximum number of iterations iter, threshold
+\FOR{$c_i \in C$}
+\FOR{$c_j \in C$}
+\IF{$i = j$}
+\STATE{$m_{ij} \leftarrow 1$}
+\ELSIF{$e(c_i,c_j) \geq$ threshold}
+\STATE{$m_{ij} \leftarrow e(c_i,c_j)$}
+\ELSE
+\STATE{$m_{ij} \leftarrow 0$}
+\ENDIF
+\ENDFOR
+\ENDFOR
+\REPEAT
+\STATE Expand: $M \leftarrow M^p$
+\STATE Inflate: $m_{ij} \leftarrow \frac{m_{ij}^r}{\sum_{k=1}^n m_{kj}^r}$
+\UNTIL iteration = iter
+\STATE Read clusters from $M$
+\RETURN Comment clusters
+\end{algorithmic}
+\end{algorithm}
+A substantial amount of training data is necessary to train the regression model. Therefore, comment pairs from the same and from differing topic clusters were collected from the gold standard used for evaluation. Target values are 1 for positive instances of the same and 0 for negative instances of different topic clusters. Herein this thesis deviates from \cite{DBLP:conf/ecir/AkerKBPBHG16}, where the target values were 0 for negative instances and between $[0.5,1]$ for positive instances. In total, 2524 positive and 7476 negative samples were collected. The linear regression models for both graph build-ups were initially trained using the standard scikit-learn linear regression model. However, this obtained negative weights which are unwanted in the reproduction. Formulating the problem as non-negative least squares also produced zero values. Thus, a lower bound of 0.1 was set for the weights. Both least squares models were implemented using the SciPy\footnote{\url{http://www.scipy.org/}} \cite{scipy} implementation.
+The obtained weights can be found alongside the implementation in the Jupyter notebook "mcl\_regression.ipynb".
+
+\subsection{Hierarchical multi-Dirichlet Process}
+\label{hmdpapproach}
+The Hierarchical multi-Dirichlet Process model \cite{DBLP:phd/dnb/Kling16} is a nonparametric topic model and able to determine the number of topics automatically. Furthermore, contextual information is included in its generative process. Hence, the social context in which comments are created in the real world can be considered. In the \hyperref[figcontext]{introduction} we have already seen an example where this is beneficial to topic modeling and how it can alleviate the challenging problem of data sparsity which is most evident in very short comments. A lack of sufficient textual data makes such comments difficult to assign topics to \cite{DBLP:conf/ecir/AkerKBPBHG16} if their context is not included. With the HMDP, we are able to include the context associated with comments. It is modeled as a prior belief about the topic distribution of documents with similar metadata through a context-specific prior \cite{DBLP:phd/dnb/Kling16}. Three types of context spaces are explored in this thesis based on certain assumptions.
+\begin{enumerate}
+\item \textbf{Timestamp of comment creation} - Context clusters within a timeline group comments created in the same timeframe. This models the idea that comments under news articles are influenced by currently trending topics and other comments and articles created shortly before them. Comments under an article about an election, for example, likely refer to current events in the local political environment. While it is also possible to model cycles, e.g. of topics present on weekdays and topics present on weekends \cite{DBLP:phd/dnb/Kling16}, these are generally not expected to exist in news article comments.
+\item \textbf{Article identifier} - Comments are grouped by their associated article based on a numeric identifier. \hyperref[review]{The analysis} of the YNACC shows that around 60\% of comments broadly targeted their articles topic. Thus, it is reasonable to assume that a large number of comments under an article are likely to refer to the its topic. Moreover, comments echo ideas from their associated article as outlined in \cite{DBLP:conf/cikm/MaSYC12}.
+\item \textbf{Thread identifier} - Comments are grouped within threads indicated by a numeric identifier. Since such subdialogues constitute a reply-relationship between comments, it is likely that comments within the same conversational thread target similar topics as in \hyperref[figcontext]{the example in the introduction}.
+\end{enumerate}
+In addition to the consideration of metadata, the HMDP model is trained on articles as well as comments. The combination of modeling comments, articles and associated metadata seeks to tackle data sparsity and to model the broad conversational structure of comments under multiple news articles. With it, the relationships between comments and articles as outlined by Ma et al. \cite{DBLP:conf/cikm/MaSYC12} are targeted. Modeling articles supports the idea that comments spread information from their associated and from other articles.
+For this thesis, the HMDP implementation as developed by Kling \cite{DBLP:phd/dnb/Kling16} available at \url{https://github.com/ckling/promoss} as part of the PROMOSS package is used.
+
+\subsection{Cluster Labeling}
+\label{labeling}
+\begin{algorithm}[H]
+\caption{The topic labeling algorithm used in this thesis.}
+\begin{algorithmic}
+\REQUIRE A set of comments $C^{t_i} = \{c_i\}_{i=1...N}$ which have been clustered in the same topic cluster of topic $t_i$, $\phi$ the topic-word distribution of $t_i$, $W$ the set of the K most likely words by $\phi$.
+\FOR{$c \in C^{t_i}$}
+\STATE{$L \leftarrow L \cup \{\text{n-grams contained in } c\}$}
+\ENDFOR
+\RETURN $\argmax_{l \in L} \left( |l \cap W| + \sum_{w \in (l \cap W)} P(w|\phi) \right)$
+\end{algorithmic}
+\end{algorithm}
+Labeling of topic clusters makes it possible to present a concise overview over a topic. This is beneficial to selective reading as a user can quickly see which topics are of interest. For topic labeling, this thesis chooses a lightweight approach which does not make use of external knowledge but uses information provided by comments and topic models.
+It bases on the fact that the topic-word distribution of a topic assigns high probabilities to words representative of it. Furthermore, it is assumed that comments provide n-grams which make up for a label of their associated topic. In order to combine both notions, n-grams, in the case of the thesis bi- and trigrams, are extracted and filtered by whether they have an intersection with the top K words of the topic-word distribution. In the end, the n-gram with the largest intersection is chosen as a label for the topic cluster. If there exist multiple such n-grams, the one with the largest sum of word probabilities under the topic-word distribution is chosen. As the MCL does not provide such a distribution, one can be obtained indirectly by training a topic model with a topic number of 1 on the comments of the identified cluster which is then used to find labels according to the afore-mentioned approach. Let $L$ denote the set of n-grams in the comments of a topic cluster which are label candidates. Let $W = \{w_1,...,w_{k}\}$ be the set of the $K$ most likely words under the topic-word distribution $\phi$ and, hence, $P(w_i|\phi) \geq P(w_j|\phi)$ for all $w_i \in W, w_j \notin W$. Then a selected label $l \in L$ fulfills 
+\begin{equation}
+l = \argmax_{l \in L} \left( |l \cap W| + \sum_{w \in (l \cap W)} P(w|\phi) \right) \text{.}
+\end{equation}
+A proof can be found in the \hyperref[labelproof]{Appendix}.
+In this thesis, the intersection is calculated between candidates and the $K=10$ most likely words of the topic.
+Bi- and trigrams are collected and filtered using NLTK. Before collection, punctuation and stop words are removed in comments and words are lowercased. Stemming is left out for the labels as it decreases readability. However, in order to obtain the probability of each word from the topic models topic-word distribution, a stemmed representation of each word is used as for the topic models stemming is performed. Again, the NLTK stop list of english words and Porter stemmer \cite{Porter:1997:ASS:275537.275705} implementation are used.
+\clearpage

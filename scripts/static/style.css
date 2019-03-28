@@ -1,0 +1,47 @@
+header          { font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;}
+body            { font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;}
+a, h1, h2       { color: #0B3875; }
+h1, h2          { margin: 0; }
+h1              { border-bottom: 2px solid #eee; }
+h2              { font-size: 1.2em; }
+
+table.dataframe, .dataframe th, .dataframe td {
+  border: none;
+  border-bottom: 1px solid #C8C8C8;
+  border-collapse: collapse;
+  text-align:center;
+  padding: 10px;
+  margin-bottom: 40px;
+  font-size: 0.9em;
+}
+
+.urls th {
+    background-color: #23A9F2;
+    color: white;
+}
+
+input   {
+    padding: 12px;
+}
+
+.button {
+    border-radius: 4px;
+    background-color: #0B3875;
+    border: none;
+    color: white;
+    padding: 12px 75px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+.centered-div {
+margin: 0 auto;
+width:750px;
+}
+
+tr:nth-child(odd)		{ background-color:#eee; }
+tr:nth-child(even)	{ background-color:#fff; }
+
+tr:hover            { background-color: #ffff99;}

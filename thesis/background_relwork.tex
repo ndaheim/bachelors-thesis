@@ -1,0 +1,662 @@
+\label{background}
+A background on text summarization, topic modeling and clustering is provided in this section. It is highlighted how topic modeling is a substantial part of extractive summarization. The problem of Text Summarization is formally introduced first and related works are outlined. Thereafter, topic modeling and clustering is introduced and a background on the models HMDP, LDA and MCL, which are used in this thesis, is provided.
+
+\subsection{Text Summarization}
+The research problem of Text Summarization can be defined as \cite{Gupta2010ASO}:
+\begin{definition}{Text Summarization} 
+Reducing a set of documents into a shorter version preserving overall information content and meaning \cite{Gupta2010ASO}.
+\end{definition}
+In order to achieve this two approaches can be distinguished \cite{Hahn:2000:CAS:619057.621587}.
+
+\begin{definition}{Abstractive Summarization} A summary is formed by rephrasing the information of the documents \cite{Gupta2010ASO, DBLP:journals/corr/abs-1109-2128}.
+\end{definition}
+\begin{definition}{Extractive Summarization} A summary is formed by the extraction of key segments of the documents \cite{Gupta2010ASO, DBLP:journals/corr/abs-1109-2128}.
+\end{definition}
+Upon comparison of the two approaches \cite{Hahn:2000:CAS:619057.621587}, a key challenge faced in abstractive summarization becomes apparent, which is aggravated by the inability of systems to "truly understand natural language" \cite{Gupta2010ASO}. While an extractive summary reuses the information representation given by the documents by snippet selection, an abstractive summary rephrases the information. Thus, it also uses vocabulary potentially unseen in the object documents \cite{DBLP:conf/conll/NallapatiZSGX16} which makes abstractive summarization arguably more complex \cite{llewellyn_grover_oberlander}. Extractive summaries on the other hand often suffer from longer than average sentences being selected and a lack of coherence \cite{Gupta2010ASO}. The latter, however, is not a concern for this work as entire comments are extracted.
+\par
+This thesis makes use of techniques of extractive summarization. Hence, the research problem of abstractive summarization is not dealt with in more detail, for which the reader is referred to \cite{Das07asurvey, Hahn:2000:CAS:619057.621587,DBLP:conf/inlg/CareniniC08, DBLP:conf/coling/GanesanZH10, DBLP:journals/corr/abs-1109-2128, DBLP:conf/conll/NallapatiZSGX16, DBLP:journals/corr/PaulusXS17}. \par
+The field of extractive summarization has experienced plenty of research across different domains, especially since the 1990s \cite{Das07asurvey, Hahn:2000:CAS:619057.621587, Conroy:2001:TSV:383952.384042}. In the following, it will first be investigated briefly in the context of single-document summarization, which has been the focus of research for a long time, and then in the context of multi-document summarization. The latter will then be considered within the domain of user-contributed content summarization and news comment summarization.
+
+\subsubsection{Single-document Summarization}
+Early works in document summarization have generally been concerned with single-document summarization.
+Cited as a first work \cite{Das07asurvey, Jezek_automatictext} in automatic text summarization in the late 1950s, Hans Peter Luhn \cite{DBLP:journals/ibmrd/Luhn58} proposed a ranking scheme for sentence selection in order to automatically create literature abstracts.
+His work already incorporates a three-step approach common for extractive summarizers \cite{DBLP:books/sp/mining2012/NenkovaM12} and this thesis.
+
+\begin{enumerate}
+\label{threestep}
+\item \textbf{Intermediate representation} - In order to identify important content more easily, documents are usually converted to an intermediate representation \cite{DBLP:books/sp/mining2012/NenkovaM12}. In \cite{DBLP:journals/ibmrd/Luhn58}, this representation is achieved by two preprocessing steps. First, words with a common stem such as "differ", "differentiate" or "different" are treated as identical, when computing their frequency. This is called stemming. Second, frequently appearing words such as "and" are removed. Such words are called stop words.
+\item \textbf{Scoring} - Each text snippet is given a score indicating importance in relation to a topic in the document \cite{DBLP:books/sp/mining2012/NenkovaM12}. In \cite{DBLP:journals/ibmrd/Luhn58}, the presence of frequent words and their linear distance to infrequent words makes up the significance score of a sentence.
+\item \textbf{Selection} - Finally, salient snippets are selected to form the summary \cite{DBLP:books/sp/mining2012/NenkovaM12}. In \cite{DBLP:journals/ibmrd/Luhn58}, sentences with the highest significance score are chosen.
+\end{enumerate}
+Luhn's \cite{DBLP:journals/ibmrd/Luhn58} techniques of achieving an intermediate representation are fundamental NLP techniques and find usage in this thesis.
+
+\begin{definition}{Term Frequency}
+\label{TF} Let $t$ be a term in a document $d$. The weight of $t$, denoted as Term Frequency $\text{tf}_{t,d}$, is the number of its occurences in $d$ \cite{Manning:2008:IIR:1394399}.
+\end{definition}
+A first use of Term Frequency can be found in \cite{Luhn:1957:SAM:1661832.1661836}. It bases on the bag of words model \cite{Manning:2008:IIR:1394399}, defined as:
+\begin{definition}{Bag of words model} A document $d$ is represented by its terms $t_i$ ignoring the exact order but preserving the number of occurences \cite{Manning:2008:IIR:1394399}. This can be represented as a matrix $D$ with entries $\text{tf}_{t_i,d}$. \cite{DBLP:phd/dnb/Kling16}.
+\end{definition}
+\begin{definition}{Stop Words}
+\label{STOP} Common words which provide little value and are thus removed \cite{Manning:2008:IIR:1394399}. Let $d$ be a document with vocabulary $V = \{ w | w \in d\}$ and $S$ the set of stop words. $V\prime = V \backslash S \subseteq V$ denotes the vocabulary of $d$ after stop word removal. While sets of common vocabulary exist\footnote{\url{https://www.nltk.org/book/ch02.html}}, stop words are often domain specific \cite{Manning:2008:IIR:1394399}.
+\end{definition}
+\begin{definition}{Stemming and Lemmatization} Both reduce words "to a common base form" \cite{Manning:2008:IIR:1394399}. Stemming usually uses heuristics to remove the end of a word. Lemmatization can include context information by a dictionary, for example that "better" has the lemma "good" \cite{Manning:2008:IIR:1394399, DBLP:conf/cikm/KoreniusLJJ04}.
+\end{definition}
+Furthermore, we want to quickly define what the term "ranking" describes in this context, since it constitutes an important concept for this thesis.
+\begin{definition}{Ranking}
+\label{rankingdef}
+In the context of text summarization, ranking can be defined using a scoring function and a linear order relation.
+Let $S$ be a set of text snippets. The scoring function
+\begin{equation}
+f: S \rightarrow \mathbb{R}
+\end{equation} assigns a real number to any snippet in $S$.
+Based on $f$, snippets can be ranked following a linear order relation defined as
+\begin{equation}
+s_i \geq s_j \Leftrightarrow f(s_i) \geq f(s_j) \quad \forall s_i, s_j \in S \text{.}
+\end{equation}
+\end{definition}
+Luhn's work \cite{DBLP:journals/ibmrd/Luhn58} was extended by Edmundson \cite{DBLP:journals/jacm/Edmundson69} in 1969, who established that not only frequent words but also cue words and phrases in cue locations such as title or conclusion are significant. This combination of multiple features was influential to later research involving machine mearning \cite{DBLP:books/sp/mining2012/NenkovaM12}, which constitutes the majority of recent research in single-document summarization \cite{Das07asurvey}. Especially neural network approaches have been studied in the previous years, e.g. in the works of Svore et al. \cite{DBLP:conf/emnlp/SvoreVB07}. Often the aim is also not extractive but abstractive summarization \cite{Khandelwal2016NeuralTS, DBLP:conf/conll/NallapatiZSGX16, DBLP:conf/emnlp/RushCW15, DBLP:journals/corr/PaulusXS17}. For more information on single-document summarization the reader is referred to \cite{Das07asurvey, Gupta2010ASO, DBLP:books/sp/mining2012/NenkovaM12}.
+
+\subsubsection{Multi-document Summarization}
+This thesis is concerned with multi-document summarization. It has emerged in the mid 1990s \cite{Das07asurvey} and seeks to summarize multiple documents in a single summary.
+Thus, the general definition of Text Summarization can be refined for Multi-Document Summarization.
+\begin{definition}{Multi-document Summarization} Reducing multiple documents into one shorter version preserving overall information content and meaning.
+\end{definition}
+In extractive summarization, the set of source documents $D = \{d_1, d_2,..., d_n\}$ is reduced to a summary $S = \{s_i\}$, where $s_i \subseteq d_1 \lor ... \lor s_i \subseteq d_n$ for all extracted snippets. Extracted snippets are often sentences but may also be entire comments, for example.
+The sources may have overlapping information but may also be contradictory \cite{Das07asurvey, Goldstein:2000:MSS:1117575.1117580}. This brings forth new challenges, which do not occur in single-document summarization, as pointed out in \cite{Goldstein:2000:MSS:1117575.1117580}.
+\begin{itemize}
+\item A higher degree of redundancy. \cite{Goldstein:2000:MSS:1117575.1117580}
+\item The presence of a temporal dimension. \cite{Goldstein:2000:MSS:1117575.1117580}
+\item A higher compression ratio. \cite{Goldstein:2000:MSS:1117575.1117580}
+\item An amplified co-reference problem \cite{Goldstein:2000:MSS:1117575.1117580}, which describes whether two expressions target a common entity \cite{DBLP:journals/coling/SoonNL01}.
+\end{itemize}
+Cited as the pioneering work \cite{Das07asurvey} in multi-document summarization, McKeown and Radev \cite{McKeown:1995:GSM:215206.215334, Radev:1998:GNL:972749.972755} proposed an \textit{abstractive} summarization tool called SUMMONS \footnote{SUMMarizing Online NewS articles} which aims to summarize news articles on a certain event \cite{Radev:1998:GNL:972749.972755}.
+It is made up of two main components. First, a content planner fills handmade templates \cite{Das07asurvey} with information from a knowledge base \cite{McKeown:1995:GSM:215206.215334}. It then arranges and connects them based on a number of operators, sets of heuristics, e.g. a contradiction operator indicating differing information. Operators thereby influence the importance of templates, based on which they are selected \cite{McKeown:1995:GSM:215206.215334}. In the end, a linguistic component arranges the information using words from a lexicon and grammar.
+However, also because of the need for handcrafted templates, SUMMONS is hard to generalize for other domains \cite{Das07asurvey}. Furthermore, the claim made in \cite{McKeown:1995:GSM:215206.215334} that extractive approaches would be unfitting for multi-document summarization has been disproven \cite{Das07asurvey}. \par
+Radev himself et al. \cite{DBLP:journals/corr/cs-CL-0005020} have done so with MEAD \label{MEAD} which summarizes multiple news articles in as they note human-like quality \cite{DBLP:journals/corr/cs-CL-0005020}.
+It builds on top of a topic detection and tracking system called CIDR \cite{Radev1999ADO} which groups news articles into broad topic clusters similar to \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11, DBLP:conf/ecir/AkerKBPBHG16}. As the notion of topic cluster will be recurring throughout the thesis, it is briefly defined in the following and refined to our use case in later sections.
+\begin{definition}{Topic cluster}
+\label{tcdef}
+Documents which target a common topic can be grouped together in clusters which each describe one topic and are called topic clusters. Such clusters can either be soft, meaning that a document can belong to multiple clusters, or hard, meaning that each document only belongs to a single cluster. The former is sometimes also referred to as fuzzy clustering \cite{DBLP:conf/ecir/AkerKBPBHG16}. Topic clustering denotes the act of establishing such clusters.
+\end{definition}
+CIDR is centroid-based \cite{Das07asurvey, Wan:2008:MSU:1390334.1390386}. Similar documents are grouped together based on similarity to the cluster centroid. New clusters can be opened up if a similarity threshold is not reached with any existing centroid \cite{Radev1999ADO}.
+For each topic cluster, the sentences closest to the centroid words are selected as the summary sentences \cite{DBLP:journals/corr/cs-CL-0005020}.
+\begin{definition}{Cluster centroid} A vector which constitutes the mean of a cluster of vectors.
+\end{definition}
+In CIDR, similarity is measured by cosine similarity \cite{Radev1999ADO}.
+
+\begin{definition}{Similarity Measure}
+\label{SIM}
+Based on \cite{Lin:1998:IDS:645527.657297}, a similarity measure can be defined as a function $f : \Omega \times \Omega \rightarrow [0,1]$, where $\Omega$ denotes a set of objects, and for which hold:
+\begin{enumerate}
+\item $f(A,B) = 1 \Leftrightarrow A = B$ \cite{Lin:1998:IDS:645527.657297}
+\item $f(A,B) < 1 \Leftrightarrow A \neq B$ \cite{Lin:1998:IDS:645527.657297}
+\item $f(A,B) = 0 \Leftrightarrow $ A and B share no commonalities. \cite{Lin:1998:IDS:645527.657297}
+\end{enumerate}
+Furthermore, the following intuition should be noted:
+\begin{enumerate}[resume]
+\item $f(A,B) > f(A\prime,B\prime) \Leftrightarrow $ A and B share more commonalities than A$\prime$ and B$\prime$ \cite{Lin:1998:IDS:645527.657297}.
+\end{enumerate}
+\end{definition}
+In CIDR \cite{Radev1999ADO}, $\Omega$ is the set of Term Frequency-Inverse Document Frequency (TF-IDF) vector representations defined as follows.
+\begin{definition}{Term Frequency-Inverse Document Frequency}
+\label{TFIDF}
+Let $t$ be a term and $d \in D$ be a document, where $D$ denotes the set of all documents.
+\begin{equation}
+\text{tf-idf}_{t,d} = \text{tf}_{t,d} \cdot \text{idf}_t \, \cite{Manning:2008:IIR:1394399}
+\end{equation}
+$\text{idf}_t$ denotes the Inverse Document Frequency (IDF) of $t$ in $D$ and $\text{tf}_{t,d}$ the Term Frequency of $t$ in $d$.
+The TF-IDF score is high for a term t occuring often in only few documents and low for a term contained in (nearly) all documents \cite{Manning:2008:IIR:1394399}.
+\end{definition}
+\begin{definition}{Inverse Document Frequency}
+\label{IDF} Let $D$ be the set of documents with $|D| = N$. The IDF of a term $t$ is defined as: 
+\begin{equation}
+\text{idf}_t = log(\dfrac{N}{\text{df}_t})
+\end{equation}
+$\text{df}_t$ denotes the Document Frequency of $t$.
+\end{definition}
+\begin{definition}{Document Frequency} Let $D$ be a set of documents and $t$ be a term. Then
+\begin{equation}
+\text{df}_t = |\{d \in D| t \in d\}|
+\end{equation}, i.e. "the number of documents in the collection that contain a term $t$" \cite{Manning:2008:IIR:1394399}
+\end{definition}
+When a word is represented as a TF-IDF vector $v$, every entry $v_i$ denotes the TF-IDF weight of a term in the vocabulary of the document collection. The underlying concept first presented by Salton et al. \cite{Salton:1975:VSM:361219.361220} in 1975 is accordingly defined as:
+
+\begin{definition}{Vector Space Model}
+\label{VSM}
+Each document $d \in D$ is represented by an alternative representation $v = (v_1,...,v_n)$, where each vector element $v_i$ represents the weight of a term contained in the document collection $D$ \cite{Salton:1975:VSM:361219.361220}.
+\end{definition}
+Such vector representations are common as they allow linear algebra operations, such as cosine similarity calculation. 
+
+\begin{definition}{Cosine Similarity}
+\label{CoS}
+A function defined for non-zero vectors $v,w \in \Omega$, where $\Omega$ denotes an inner product space defined as follows for two column vectors.
+\begin{equation}
+cosim : \Omega \times \Omega \rightarrow [-1,1]
+\end{equation}
+\begin{equation}
+cosim(v,w) = \frac{v^Tw}{||v|| ||w||}
+\end{equation}
+$||\cdot||$ denotes the Euclidian norm $||v|| = \sqrt{\sum_{1}^{M} v_i^{2}}$ for a vector $v$ with $M$ entries.
+In NLP, $v$ and $w$ are usually positive. In this case, $cosim$ is a similarity measure as defined in \hyperref[SIM]{definition 2.12} and has the signature:
+\begin{equation}
+cosim(v,w) : \Omega \times \Omega \rightarrow [0,1]
+\end{equation}
+\end{definition}
+Recent works in the domain usually use Latent Dirichlet Allocation (LDA) \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11, Arora:2008:LDA:1390749.1390764}, Markov model-based algorithms \cite{DBLP:conf/lrec/BarkerPFKAFHG16} or k-means clustering \cite{Wan:2008:MSU:1390334.1390386, llewellyn_grover_oberlander} to group documents by topics.
+Many \cite{Cao:2015:RRN:2886521.2886620, Zhang2016, Yasunaga2017, Ren:2018:SRE:3211967.3200864} also target the applications of neural networks for extractive multi-document summarization.
+
+\subsubsection{Summarization of user-contributed comments}
+A popular way of user-contribution are comments under textual and non-textual resources, such as news articles, product descriptions or videos \cite{DBLP:conf/cikm/MaSYC12}. As we will see later, such comments differ from other textual resources due to their sparsity, noise and fluctuating length.
+Many works in the field of user-contributed content summarization have focused on summarizing opinion and sentiment \cite{DBLP:conf/cikm/MaSYC12}.
+Notably, Wang et al. \cite{Wang:2010:LAR:1835804.1835903} have proposed a solution to \textit{Latent Aspect Rating Analysis}, which is described as finding the latent opinion of commenters on different aspects of the reviewed objective \cite{Wang:2010:LAR:1835804.1835903}. The proposed regression model bases on an Aspect Segmentation Algorithm, which "assign[s] each sentence to the aspect that shares the maximum term overlapping with this sentence" \cite{Wang:2010:LAR:1835804.1835903}. However, in \cite{Wang:2010:LAR:1835804.1835903} aspects are not seen as latent but assumed to be known beforehand \cite{Wang:2010:LAR:1835804.1835903}.\par
+Closer related to this thesis, Khabiri et al.'s \cite{DBLP:conf/icwsm/KhabiriCH11} take on summarizing YouTube comments models the previously presented \hyperref[threestep]{three-step approach} \cite{DBLP:books/sp/mining2012/NenkovaM12}.
+Similarity-based k-means clustering and topic clustering based on LDA are compared. To tackle data sparsity, the number of topics of a comment is restricted to one. For ranking, term importance-based and precedence-based schemes are compared. In the latter, a random walk \footnote{see \hyperref[sprocess]{definition 2.30}} is performed on a graph established based on comment similarity \cite{DBLP:conf/icwsm/KhabiriCH11}. After ranking the top k comments are selected. An evaluation of the different combinations of clustering and ranking schemes is conducted by letting 5 subjects rate the first 50 comments of 30 videos by spur of interest and informativeness \cite{DBLP:conf/icwsm/KhabiriCH11}. Based on this, Normalized Discounted Cumulative Gain (NDCG) is calculated. It is concluded that LDA coupled with a precedence-based ranking yields the best results \cite{DBLP:conf/icwsm/KhabiriCH11}. \par
+The approach chosen in \cite{DBLP:conf/icwsm/KhabiriCH11} shares many commonalities with existing news comment summarization efforts \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander} which are presented in the following.
+
+\paragraph{Summarization of news article comments}
+The procedure of topic clustering and ranking comments within each cluster before selection has been adopted throughout works in news comment summarization \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/ecir/AkerKBPBHG16, DBLP:conf/ecir/FunkABPHG17}. Ma et al. \cite{DBLP:conf/cikm/MaSYC12} formalize this as \textit{Topic-driven Reader Comments Summarization} (TORCS).
+Furthermore, they formalize the relationships between news articles and comments as follows.
+\begin{itemize}
+\item \textbf{news-news} - Two news articles report on the same topic. \cite{DBLP:conf/cikm/MaSYC12}
+\item \textbf{intra-comment-comment} - Comments propagate ideas of comments under the same news article \cite{DBLP:conf/cikm/MaSYC12}.
+\item \textbf{intra-news-comment} - Comments propagate ideas of the news article they are issued under \cite{DBLP:conf/cikm/MaSYC12}.
+\item \textbf{inter-comment-comment} \cite{DBLP:conf/cikm/MaSYC12} - Comments propagate ideas from comments under a different article \cite{DBLP:conf/cikm/MaSYC12}.
+\item \textbf{inter-news-comment} - Comments are influenced by other news articles \cite{DBLP:conf/cikm/MaSYC12}.
+\end{itemize}
+Based on these relationships, two LDA-based topic models are defined. Both treat an article as a master document and each of its comments as slave documents. They are compared to a bisecting clustering algorithm called CLUTO \footnote{\url{http://glaros.dtc.umn.edu/gkhome/views/cluto}}. In the Master-Slave Topic Model (MSTM), topics of comments are derived from the topics of the associated article and drawn based on its topic-word distribution which is inferred using LDA \cite{DBLP:conf/cikm/MaSYC12}. The Extended Master-Slave Topic Model (EXTM) allows topics of comments to stem from extended topics not derived from the associated article \cite{DBLP:conf/cikm/MaSYC12}.
+A switch drawn from a binomial distribution determines the origin of a topic. Both models are compared using perplexity. It is concluded that EXTM significantly outperforms MSTM \cite{DBLP:conf/cikm/MaSYC12}. Furthermore, both topic models outperform CLUTO in terms of topic cohesion and topic diversity.
+For ranking comments, Maximal Marginal Relevance (MMR) \cite{Carbonell:1998:UMD:290941.291025} and a combination of Rating and Length are compared. MMR as used in this thesis is defined in \autoref{ranking}. Both methods are compared in combination with the different clustering approaches in a user study. 15 comments extracted as a summary for each of 50 randomly selected articles are rated by subjects by topic cohesion, topic diversity and news relatedness. MMR is reported to have yielded the best results, especially in combination with EXTM \cite{DBLP:conf/cikm/MaSYC12}. \par
+Ma et al.'s \cite{DBLP:conf/cikm/MaSYC12} and Khabiri et al.'s \cite{DBLP:conf/icwsm/KhabiriCH11} works have served as the basis of Llewellyn et al.'s \cite{llewellyn_grover_oberlander} research, who investigated different methods of clustering and ranking. A baseline unigram approach, where comments were assigned to one of the 14 most frequent terms, is compared to cosine distance \footnote{Defined as 1 - \hyperref[CoS][Cosine Similarity]} clustering, k-means clustering and LDA. In an evaluation based on a gold standard of comments of one article grouped by annotators, only LDA beats the baseline by micro-averaged F-Score \cite{llewellyn_grover_oberlander}. For ranking, the methods used in Khabiri et al. \cite{DBLP:conf/icwsm/KhabiriCH11} and Ma et al. \cite{DBLP:conf/cikm/MaSYC12} are applied. For each method, human-produced summaries of comments under articles of the Guardian newspaper are compared against three comments selected from each associated topic cluster. PageRank offers the best results followed by MMR \cite{llewellyn_grover_oberlander}. It is also proposed that including sentiment \cite{llewellyn_grover_oberlander} might improve a summary. \par
+A slightly different approach was chosen by researchers of the University of Sheffield \cite{DBLP:conf/acl/BarkerG16, DBLP:conf/ecir/AkerKBPBHG16, DBLP:conf/lrec/BarkerPFKAFHG16, DBLP:conf/sigdial/BarkerPAKHG16, DBLP:conf/inlg/AkerPKFBHG16, DBLP:conf/ecir/FunkABPHG17}. The method used in their series of papers uses graph-based clustering and is inspired by works in argument mining \cite{DBLP:conf/acl/BarkerG16}. The notions of issue, viewpoint and assertion are distinguished in comments and build a first approach \cite{DBLP:conf/acl/BarkerG16}. Assertions are described as propositions of commenters which "[express] a viewpoint" about an issue \cite{DBLP:conf/acl/BarkerG16}.
+A graph representation is derived containing each notion as nodes and relationships between them as edges.
+Lastly, algorithms to produce summaries of one issue and a complete graph are presented in theory. The latter is executed manually and compared to a gold standard summary.
+In a following paper \cite{DBLP:conf/ecir/AkerKBPBHG16}, this is translated to a version of the Markov Cluster Algorithm (MCL) \cite{vandongen00} which is able to automatically determine the number of topic clusters. Comments are graph nodes between which edges are established if a threshold similarity is exceeded. Similarity is measured by a linear regression model of multiple similarity measures. Positive training samples are made up of comments which quote the same paragraph of an article of the Guardian newspaper \cite{DBLP:conf/ecir/AkerKBPBHG16}. Once the hard topic clusters are identified, they are labeled with a graph-based unsupervised labeling approach based on Hulpus et al. \cite{DBLP:conf/wsdm/HulpusHKG13}. An \hyperref[LDA]{LDA model} is used to discover five topics for each cluster. Concepts for the ten most likely words of each cluster form a graph using DBPedia \footnote{\url{https://wiki.dbpedia.org/}} which is merged. The centrality of each graph forms the cluster label. Finally, an evaluation involving human gold standards shows that the graph-based approach outperforms LDA approaches and that the created labels are often meaningful \cite{DBLP:conf/ecir/AkerKBPBHG16}.
+In a follow-up \cite{DBLP:conf/lrec/BarkerPFKAFHG16}, it is constituted that a summary shall outline opinion on main issues.
+Based on this, a three-step, task-based evaluation process for summarization is established including a questionnaire and group discussion and investigated in a pilot evaluation of a prototype system \cite{DBLP:conf/lrec/BarkerPFKAFHG16}. Based on this, the prototype system is refined resulting in \textit{The SENSEI Overview of Newspaper Readers’ Comments} \cite{DBLP:conf/ecir/FunkABPHG17}. Users are presented a pie chart containing the labeled topics \cite{DBLP:conf/inlg/AkerPKFBHG16}, a selected extract for each topic and the possibility to click a pie chart wedge representing a topic to find more comments on it \cite{DBLP:conf/ecir/FunkABPHG17, DBLP:conf/inlg/AkerPKFBHG16}. The usage of a chart to summarize the discussed topics is supported by a study of preferences in summary design \cite{DBLP:journals/polibits/SanchanBA16}. A combination of chart and side-by-side summary indicating (dis-)agreement is concluded to be favorable \cite{DBLP:journals/polibits/SanchanBA16}. The SENSEI system \cite{DBLP:conf/ecir/FunkABPHG17}, however, does not include sentiment but presents a highest ranked sentence per topic. A ranking of sentences is established based on closeness to the centroid of the topic cluster \cite{DBLP:conf/inlg/AkerPKFBHG16}.
+Additionally, a supervised model for cluster labeling \cite{DBLP:conf/inlg/AkerPKFBHG16} is presented which outperforms a TF-IDF-based baseline with statistical significance \cite{DBLP:conf/inlg/AkerPKFBHG16}. Again, a linear regression model is used to extract labels. Gold standard is produced from human-made summaries of news article comments.
+The gold standard used throughout the works is publicly available in the SENSEI corpus \footnote{\url{http://sensei.group.shef.ac.uk/sensei/corpus.html}} comprised of 18 articles, associated comments and annotations  \cite{DBLP:conf/sigdial/BarkerPAKHG16} . \par
+All of the afore-mentioned works target the summarization of comments under a single article.
+Only \cite{Raveendran:2012:LCS:2348283.2348490} explicitely targets the summarization of comments under multiple articles. However, it does not target a topic-driven summarization and focusses on being lightweight. News articles and comments are retrieved for a query using heuristics. Then, comment snippets are presented after being ranked by K-L divergence \footnote{for more information refer to \url{https://nlp.stanford.edu/IR-book/html/htmledition/extended-language-modeling-approaches-1.html} \cite{Manning:2008:IIR:1394399}}.
+\subsubsection{Evaluation of Automatic Summaries}
+\label{eval}
+Evaluation means of summarization efforts can be categorized as being either \textbf{extrinsic} or \textbf{intrinsic} \cite{Hassel04lic}.
+Intrinsic evaluation techniques often make use of reference summaries used as a gold standard \cite{Hassel04lic}. However, creating such a reference summary is tedious and expertise-needy \cite{DBLP:conf/coling/ZopfPE16}. Even then, agreement between annotators is not guaranteed \cite{Das07asurvey} and an ideal solution to the summarization problem does not exist \cite{Das07asurvey}. Furthermore, while corpusses containing human reference summaries exist, for example for the DUC \footnote{\url{https://www-nlpir.nist.gov/projects/duc/index.html}} summarization tasks, they are commonly domain specific and, thus, not generally applicable. Nevertheless, when reference summaries can be used there exist different evaluation metrics such as the ROGUE \cite{Lin:2004} package which has become de-facto standard \cite{Das07asurvey}.
+It consists of multiple measures which calculate overlap between reference and evaluated summary. The ROGUE-N co-occurence statistics, for example, measure the ratio of overlapping N-grams and the ROGUE-L score measures the longest common subsequence \cite{Lin:2004}. 
+\par
+Due to the tediousness of intrinsic evaluation of an entire summarization system and the restricted availability of gold standards, it is common to evaluate single components of such a system on their own. In related works this is often carried out by evaluating topic clustering \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11, DBLP:conf/ecir/AkerKBPBHG16} or ranking steps \cite{llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11}. Furthermore, user studies are frequently used in related works \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11}.
+While such commonly involves subjects scoring the performance of different steps of the summarization effort \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11, DBLP:conf/ecir/AkerKBPBHG16}, there also exist approaches to modeling evaluation as a game for both entire summaries \cite{Hassel04lic} and used technologies. In \cite{DBLP:phd/dnb/Kling16, NIPS2009_3700}, for example, a game where subjects identify intruder words is used to measure topic model performance.
+Furthermore, user studies can be conducted in a task-based fashion \cite{DBLP:journals/corr/cs-CL-0005020}, such as outlined in \cite{DBLP:conf/lrec/BarkerPFKAFHG16} where a task-based evaluation was conducted on a prototype system.
+User involvement in general is important in extrinsic evaluation which "measures the efficiency and acceptability of the generated summaries in some task" \cite{Hassel04lic}.
+
+\subsection{Topic Modeling \& Clustering}
+\label{TM}
+This section introduces topic modeling \& clustering which have been key elements of many related summarization systems \cite{DBLP:journals/corr/cs-CL-0005020, DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander, DBLP:conf/icwsm/KhabiriCH11, Arora:2008:LDA:1390749.1390764, DBLP:conf/lrec/BarkerPFKAFHG16, Wan:2008:MSU:1390334.1390386, llewellyn_grover_oberlander}. For summarizing news article comments, LDA \cite{DBLP:conf/cikm/MaSYC12, llewellyn_grover_oberlander} and MCL \cite{DBLP:conf/lrec/BarkerPFKAFHG16} have shown good performance and are, hence, investigated and outlined in the following. Additionally, the Hierarchical Dirichlet Process (HDP) \cite{Teh04hierarchicaldirichlet} model and a context-aware extension thereof, the Hierarchical multi-Dirichlet Process (HMDP) \cite{DBLP:phd/dnb/Kling16}, is introducted. \\
+The goal of topic modeling can be described as finding the latent topics discussed in a document or a set of documents \cite{DBLP:phd/dnb/Kling16}. A topic model does not require background knowledge about how topics are distributed in the documents and expressed with words \cite{DBLP:phd/dnb/Kling16}. This enables a number of use cases, as pointed out by Kling \cite{DBLP:phd/dnb/Kling16}. Representing documents by their topic can increase computational efficiency. A query for documents can be limited to documents covering a broad topic of the query string. Similarly, a machine learning algorithm can be applied to only the topic words of a document instead of the entire document \cite{DBLP:phd/dnb/Kling16}. This is a form of dimension reduction \cite{Crain2012}, where a high dimensional text consisting of many tokens is represented by a representation with fewer tokens and lower dimension, which maintains semantic properties \cite{Crain2012}.
+Topic models are not restricted to documents and have also been used to find genetic patterns, for example \cite{Blei:2012:PTM:2133806.2133826}. Topic models are initially not concerned with grouping which is, nevertheless, enabled by the document-topic distribution. \par
+Clustering algorithms such as the MCL, on the other hand, intent to group datapoints into groups containing similar data \cite{Bishop:2006:PRM:1162264}. Here, the notion of similarity is broad and not immediately concerned with the notion of \textit{topic}. Use cases of clustering are thus very general and not restricted to textual data, as well. Just like topic models, they have been successfully applied in bioinformatics to detect protein families \cite{vandongen02}. \\
+All presented topic models and clustering approaches base on the bag-of-words assumption \cite{DBLP:phd/dnb/Kling16}. Since they base on advances in probability theory, a common background is established in the following which is largely based on \cite{rockenfeller} and \cite{DBLP:phd/dnb/Kling16}. Readers familiar with these concepts might skip the following subsection.
+\subsubsection{Preliminaries in Probability Theory}
+\begin{definition}{\textbf{Random Variable}} a measurable function $X$ with the signature
+\begin{equation}
+X : \Omega \rightarrow \mathbb{R}
+\end{equation}
+, where $\Omega$ denotes the set of possible outcomes called sample space. A random variable assigns a value to each of the outcomes in the sample space. Discrete random variables can take on only countably many values, whereas continuous random variables can take on an uncountably infinite number of values. 
+\end{definition}
+To employ an example, let random variable $X_c$ describe a coin toss. $X_c$ is clearly discrete as the set of possible outcomes contains heads and tails. For the sake of illustration, let us define the assigned value as 10\$ won if it matches a guess or lost otherwise in the following.
+For a random variable $X$, a probability distribution exists, defining the probability for each measurable set of outcomes $x \in \mathcal{A}$ to be observed.
+\begin{definition}{Probability distribution} a function with the signature
+\begin{equation}
+P : \mathcal{A} \rightarrow [0,1]
+\end{equation}
+, where $\mathcal{A}$ denotes a $\sigma$-Algebra on $\Omega$ and for which hold
+\begin{align}
+P(A) &\geq 0 \quad \forall A \subset \Omega \\
+P(\Omega) &= 1 \\
+P(\cup_{j=1}^{\infty} A_j) &= \sum_{j=1}^{\infty} P(A_j) \quad \forall \text{ disjunct } A_1, A_2,... \subset \mathcal{A}
+\end{align}
+$P$ is also called probability measure on $\mathcal{A}$ and the triple $(\Omega, \mathcal{A}, P)$ is called probability space.
+\end{definition}
+Discrete random variables have discrete distributions commonly defined as Probability Mass Function (PMF) \cite{DBLP:phd/dnb/Kling16}.
+\begin{definition}{Probability Mass Function} For a discrete random variable $X : \Omega \rightarrow \{x_1, x_2,..., x_n\}$, the PMF is defined as:
+\begin{align}
+f &: \{x_1, x_2,...,x_n\} \rightarrow [0,1] \\
+f(x_i) &= \begin{cases} 
+      P(X=x_i) & x_i \in \{x_1, x_2,..., x_n\} \\
+      0 & \text{else}
+   \end{cases}
+\end{align}
+\end{definition}
+For our random variable $X_c$, the PMF describes the probabilities of winning or losing 10\$. In a fair toss, both would be equal to 0.5.
+Since a continuous random variable can take on an uncountably infinite number of values, the probability of a one-point set occuring equals zero in continuous distributions. Continuous distributions are commonly defined by Probability Density Functions (PDF) \cite{DBLP:phd/dnb/Kling16}.
+\begin{definition}{Probability Density Function} a function with the signature
+\begin{equation}
+f : \Omega \rightarrow \mathbb{R}
+\end{equation}
+for which hold
+\begin{gather}
+f(x) \geq 0 \; \forall \; x \in \Omega \text{ , else } 0 \\
+\int_{\Omega} f(x)dx = 1
+\end{gather}
+\end{definition}
+Based on the PDF, the distribution function of a continuous random variable $X$ can be defined as:
+\begin{definition}{Continuous distribution}
+\begin{equation}
+F(x) = P(X \leq x) = \int_{-\infty}^{x} f(x)dx
+\end{equation}
+\end{definition}
+Random variables can be combined to form a joint distribution. This models the probability that each of the random variables takes on a certain set of outcomes. A dice roll described by the random variable $Y_d$ added to the coin toss can be modeled with a joint distribution, for example.
+\begin{definition}{Joint distribution} For two random variables $X$, $Y$ the joint distribution is defined to be in the discrete case:
+\begin{equation}
+P(X=x_i, Y=y_i) := P(\{X=x_i\}\cap\{Y=y_j\})
+\end{equation}
+and to be
+\begin{equation}
+f_{X,Y} = f_{Y|X}(y|x)f_X(x) = f_{X|Y}(x|y)f_Y(y)
+\end{equation}
+in the continuous case.
+\end{definition}
+In the latter, $f_{Y|X}(y|x) = f_{X|Y}(x|y)$ denotes the conditional probability distribution of $Y$ given $X=x$ and $X$ given $Y=y$. This concept is also known as the \textit{posterior distribution} and important in probabilistic topic modeling \cite{Blei:2012:PTM:2133806.2133826}, as it shows a distribution when a certain set of outcomes is already known. Suppose the dice is rolled after the coin toss and multiplies win or loss by the number of eyes present. The conditional distribution of $Y_d$ given $X_c$ then describes the probability of winning or losing 10, 20,..., 60\$ depending on the known coin toss.
+\begin{definition}{Conditional distribution} Let $X, Y$ be two discrete random variables. The conditional distribution of Y given X is given by:
+\begin{equation}
+f_{Y|X}(Y=y|X=x) = \frac{P(X=x \cap Y=y)}{P(X=x)}
+\end{equation}
+\end{definition}
+$f_X(x)$ and $f_Y(y)$ denote the marginal distribution of X and Y. This can be used to factor out variables as is often desirable in probabilistic models with many variables \cite{DBLP:phd/dnb/Kling16}. While for the conditional distribution of $Y$ under $X$ the value of $X$ is known, in the marginal distribution it is unknown.
+\begin{definition}{Marginal distribution}
+Let $X$ and $Y$ be two random variables. The marginal distribution of $X$ in the discrete case is given by:
+\begin{equation}
+f_X(x) = \sum_y P(X=x,Y=y)
+\end{equation}
+and in the continuous case by:
+\begin{equation}
+f_X(x) = \int_{-\infty}^{\infty} f_{X,Y}(x,y)dy
+\end{equation}
+\end{definition}
+For probabilistic topic models, two distributions are of special interest; the multinomial distribution and the Dirichlet distribution. As the multinomial distribution is a multivariate version of the binomial distribution the latter is introduced first.
+\begin{definition}{Binomial distribution} Let $n$ denote the number of trials, $p$ the probability of a successful trial and $X$ the random variable, which denotes the number of successes. Then $X \sim Bin(n,p)$ with PMF
+\begin{equation}
+P(X=k) = {n \choose k} p^k (1-p)^{(n-k)} \text{.}
+\end{equation}
+\end{definition}
+Tossing our coin 10 times, for example, is described by a discrete random variable $X_d\prime \sim Bin(10,0.5)$ if the toss is fair.
+\begin{definition}{Multinomial distribution}
+Let $K$ be the number of categories with probabilities $p_1, p_2, ..., p_K$ and $n_1, n_2, ...,n_K$ their counts.
+\begin{equation}
+P(n_1,n_2,...,n_K) = \frac{(\sum_{i=1}^K n_i)!}{n_1! \cdot \cdot \cdot n_K!} \cdot p_1^{n_1}\cdot \cdot \cdot p_K^{n_K}
+\end{equation}
+\end{definition}
+The Dirichlet distribution is related to the multinomial distribution as it can be used as a prior distribution for its parameters \cite{DBLP:phd/dnb/Kling16}. A prior distribution expresses a \textit{prior belief} about how data is distributed. Moreover, the Dirichlet distribution is a \textit{conjugate prior} of the multinomial \cite{DBLP:journals/jmlr/BleiNJ03}, meaning that if the prior distribution is Dirichlet-distributed, then so is the \textit{posterior distribution}.
+\begin{definition}{Dirichlet distribution}
+\begin{equation}
+P(\theta_1,...,\theta_K|\alpha_1,...,\alpha_K) = \frac{\prod_{k=1}^K\Gamma(\alpha_K)}
+{\Gamma(\sum_{k=1}^K\alpha_K)}\cdot \prod_{k=1}^K\theta^{\alpha_{k}-1}
+\end{equation}
+It holds $\theta_K \in [0,1]^K \; \forall k=1,...,K$ and $\sum_{k=1}^K \theta_k = 1$ \cite{DBLP:phd/dnb/Kling16}. Furthermore, smaller $\alpha_i$ induce sparsity while larger $\alpha_i$ induce a smoothed distribution. If $\alpha_i = \alpha_j \; \forall i,j \in \{1,...,K\}$, the prior is symmetric and favors no $\theta_i$ over the other \cite{DBLP:phd/dnb/Kling16}. The PDF can then be rewritten as
+\begin{equation}
+P(\theta_1,...,\theta_K|\alpha) = \frac{\Gamma(\alpha)^K}{\Gamma(K\cdot\alpha)} \cdot
+\prod_{k=1}^K \theta_k^{\alpha-1}
+\end{equation}
+If $\alpha$, referred to as the concentration parameter \cite{DBLP:phd/dnb/Kling16}, equals 1, the Dirichlet distribution equals the uniform distribution.
+\end{definition}
+In the definition of the Dirichlet distribution, $\Gamma$ denotes the gamma function defined as follows.
+\begin{definition}{Gamma function}
+Let $z > 0$. Then
+\begin{equation}
+\Gamma(z) = \int_0^{\infty}x^{z-1}\cdot e^{-x}
+\end{equation}
+defines the gamma function. For $n \in \mathbb{N}$, the gamma function equals the factorial of n, i.e. $\Gamma(n) = n!$.
+\end{definition}
+Coming back to distributions in general, joint distributions can also be defined by stochastic processes \cite{Blei:2012:PTM:2133806.2133826} as is the case in LDA, HDP or HMDP.
+\begin{definition}{Stochastic process}
+\label{sprocess}
+A family of random variables
+\begin{equation}
+X = (X_0, X_1, X_2,...)
+\end{equation}
+on a common finite set S, also called the state space. Stochastic processes commonly model events on a timeline. Our example of rolling a dice after a coin toss is a simple stochastic process, for example.
+\end{definition}
+For the MCL algorithm, a specific type of stochastic process is of importance; the Markov chain.
+\begin{definition}{Markov chain} A stochastic process $X$ is called Markov chain, if for all $n \geq 1$ and for all $s,x_0,x_1,...,x_{n-1} \in S$ holds:
+\begin{equation}
+P(X_n = s|X_0 = x_0, X_1 = x_1, ... , X_{n-1} = x_{n-1}) = P(X_n = s|X_{n-1} = x_{n-1})
+\end{equation}
+That is, the current state is only dependent on the state immediately before it.
+\end{definition}
+A Markov Chain can be represented by a weighted graph $G = (V,E)$ with a set of \textit{vertices} or \textit{nodes} $V$ and a set of \textit{edges} or \textit{arcs} $E$. Each vertex represents a state, hence $V = S$, and each edge holds the (one-step) transition probability $P(X_{n+1}=j|X_n=i)$ for the vertices $i$ and $j$ it connects. This notion can also be described by a matrix known as the $|V| \times |V|$ \textit{transition matrix} $\mathbb{P}$.
+\begin{definition}{Transition matrix}
+The transition matrix $\mathbb{P}$ of a Markov chain holds the transition probabilites $p_{ij} = P(X_{n+1}=j|X_n=i)$ for all pairs of vertices $(i,j) \in V$. It is stochastic, i.e. :
+\begin{equation}
+p_{ij} \geq 0 \quad \land \quad \sum_{j=1}^{|V|} p_{ij} = 1 \quad \forall i,j \in V
+\end{equation}
+For the associated Markov graph, the sochasticness translates to the outgoing edges of a vertex v summing up to 1.
+\end{definition}
+While the above single-step transition matrix shows short-term behaviour of a Markov chain, the long-term behaviour is described by the n-step transition matrix $\mathbb{P}_n = \mathbb{P}(m,m+n) = \mathbb{P}^n$; following the Chapman-Kolmogorov equation $\mathbb{P}(m,m+n+r) = \mathbb{P}(m,m+n)\cdot\mathbb{P}(m+n,m+n+r)$.
+\subsubsection{Latent Dirichlet Allocation}
+\label{LDA}
+Latent Dirichlet Allocation is a topic model introduced by Blei et al. \cite{DBLP:journals/jmlr/BleiNJ03} in 2003. It bases on two assumptions:
+\begin{enumerate}
+\item Topics are usually described by few key terms which are thus very likely to occur when a document talks about the topic \cite{Crain2012}. Crain et al. \cite{Crain2012} illustrate this with the difficulty a player faces in the game of Taboo\textsuperscript{\textregistered} (a registered trademark of Hasbro) where players have to describe a word without using a set of taboo words. This can be modeled as a "conditional probability that an author will use a term given the topic the author is writing about" \cite{Crain2012}, the topic-word distribution.
+\item Documents are assumed to be created in a certain generative process \cite{Blei:2012:PTM:2133806.2133826, DBLP:conf/icml/Wallach06}. This process can be modeled as a stochastic process and inferred based on the seen documents \cite{Blei:2012:PTM:2133806.2133826}.
+\end{enumerate}
+LDA requires the number of topics K to be known a priori. Furthermore, every document considers each of the K topics \cite{Blei:2012:PTM:2133806.2133826} which are characterized by a topic-word distribution \cite{wallach08}.
+For each document $w$ in a corpus $D$ with $|D| = M$, the generative process as described in \cite{DBLP:journals/jmlr/BleiNJ03} and outlined by Kling \cite{DBLP:phd/dnb/Kling16} is defined as follows.
+\begin{enumerate}
+\item Choose the number of words from a Poisson distribution 
+\begin{equation}
+N \sim Poi(\lambda)
+\end{equation}
+\item For every of the K topics, draw a topic-word distribution $\phi_k$ from a Dirichlet distribution with parameter $\beta$
+\begin{equation}
+\phi_k \sim Dir(\beta)
+\end{equation}
+\item Draw a document-topic distribution $\theta_i$ from a Dirichlet distribution with parameter $\alpha$
+\begin{equation} 
+\theta_i \sim Dir(\alpha)
+\end{equation}
+\item For each of the N words $w_{ij}$, draw a topic $z_{ij}$ from $\theta_i$, then draw a word $w_{ij}$ from $\phi_{z_{ij}}$
+\begin{equation}
+z_{ij} \sim Mult(\theta_i)
+\end{equation}
+\begin{equation}
+w_{ij} \sim Mult(\phi_{z_{ij}})
+\end{equation}
+\end{enumerate}
+\begin{figure}[t]
+\label{fig2}
+	\centering
+\begin{tikzpicture}[x=1cm,y=0.8cm]
+
+  % Nodes
+  \node[obs]                   (w)      {$w$} ; %
+  \node[latent, above=of w]    (z)      {$z$} ; %
+  \node[latent, above=of z]    (theta)  {$\theta$}; %
+  \node[latent, above=of theta] (alpha) {$\alpha$};
+  \node[latent, right=of w] (phi)  {$\phi$}; %
+  \node[latent, above=of phi]  (beta) {$\beta$}; %
+
+  % Edges
+  \edge {z, phi} {w} ;
+  \edge {beta} {phi} ;
+  \edge {theta} {z} ;
+  \edge {alpha} {theta} ;
+  
+  % Plates
+  \plate {plate1} {(w)(z)} {$N$} ;
+  \plate {} {(w)(z)(theta)(plate1.north east)(plate1.south east)} {$M$};
+  \plate {} {(phi)} {$K$} ;
+
+\end{tikzpicture}
+
+	\caption{Plate notation of the LDA model as adopted from Kling \cite{DBLP:phd/dnb/Kling16}. Variables with grey background are observed, while such with white background are hidden. Plates indicate repitition.}
+\end{figure}
+\par
+The generative process "defines a joint probability distribution over both the observed and hidden random variable" \cite{Blei:2012:PTM:2133806.2133826}. The documents and their words are observed, while the actual document-topic and topic-word distributions are hidden \cite{Blei:2012:PTM:2133806.2133826}.
+Based on this, the posterior distribution of the model given the documents can be inferred \cite{Blei:2012:PTM:2133806.2133826}.
+The posterior distribution given a document $w$ is given by
+\begin{equation}
+p(\theta,z|w,\alpha,\beta) = \frac{p(\theta,z,w|\alpha,\beta)}{p(w|\alpha,\beta)}
+\end{equation}
+as outlined in \cite{DBLP:journals/jmlr/BleiNJ03}. Calculating the numerator, "the joint distribution of all the random variables" \cite{Blei:2012:PTM:2133806.2133826}, is achievable. Calcularing the denominator, "the marginal probability of the observations, which is the probability of seeing the observed corpus under any topic model" \cite{Blei:2012:PTM:2133806.2133826}, is not since this would equal going through all possible models \cite{Blei:2012:PTM:2133806.2133826, DBLP:phd/dnb/Kling16}. For $K$ topics and a corpus of $L$ distinct words, this is a space of size $K^L$ \cite{Blei:2012:PTM:2133806.2133826, DBLP:phd/dnb/Kling16}. Thus, approximative methods are used in practice. Popular methods are Gibbs sampling and variational inference \cite{DBLP:journals/jmlr/BleiNJ03, Blei:2012:PTM:2133806.2133826, DBLP:phd/dnb/Kling16}. The LDA implementation used in this thesis employs the latter. It appromixates the hidden parameters of the model by assuming their independence and, thereby, modeling it as an approximative distribution. More precisely, collapsed variational inference is used "where the multinomial parameters are marginalised out" \cite{DBLP:phd/dnb/Kling16}. For more information on inference, the reader is referred to \cite{DBLP:journals/jmlr/BleiNJ03, Blei:2012:PTM:2133806.2133826, DBLP:phd/dnb/Kling16, Crain2012} \par
+LDA is simple and powerful topic model \cite{Blei:2012:PTM:2133806.2133826} but needs the number of topics to be known a priori, which is usually not the case for real-world data \cite{wallach08} and leads us to the next two models, HDP and HMDP.
+\subsubsection{Hierarchical Dirichlet Processes}
+The Hierarchical Dirichlet Process (HDP) is a Bayesian nonparametric topic model first presented by Teh et al. \cite{Teh04hierarchicaldirichlet}.
+It is also based on the two underlying ideas of LDA; how a topic is best described by certain essential words \cite{Crain2012} and how document creation can be described with an inferable generative process \cite{DBLP:journals/jmlr/BleiNJ03}. In HDP, however, the generative process is different. The a priori restriction of the topic space made in LDA is lifted as it does not rely on finite-dimensional \cite{frigyik2010introduction} Dirichlet distribution priors. Instead, the Dirichlet Process (DP) \cite{ferguson73} is used. Thus, the explorable topic space is of infinite size \cite{Teh04hierarchicaldirichlet} and $K$ does not need to be known beforehand. In DP mixture models\footnote{Mixture models assume "grouped observations [...] generated by mixtures of multiple latent distributions" \cite{DBLP:phd/dnb/Kling16}, in our case documents consisting of mixtures of topics \cite{DBLP:phd/dnb/Kling16}.}, new groups, in our case topics, can be opened up if necessary \cite{Teh04hierarchicaldirichlet}. The notion of \textit{Dirichlet Process} shall be defined in the following.
+The Dirichlet process \cite{ferguson73} is a stochastic process. It is a distribution of probability measures and can be thought of as an infinite-dimensional generalization of the Dirichlet distribution. It is commonly illustrated with a metaphor called the Chinese Restaurant Process (CRP) \cite{me22} where a chinese restaurant with an unbounded number of tables is considered. Customers, denoted by $\theta_i$ \cite{Teh04hierarchicaldirichlet}, enter the restaurant one by one. They sit at an occupied table with a probability proportional to the number of people already sitting at it denoted by $m_k$. Every customer, however, can also open up a new table with a probability $\gamma$. $\gamma$ is, therefore, also called scaling parameter. In a topic model, it influences the number of topics \cite{DBLP:phd/dnb/Kling16}. As outlined in \cite{DBLP:phd/dnb/Kling16}, a random variable $Z$ can be defined which indicates the table a person chooses with the distribution:
+\begin{equation}
+P(Z=k) = \begin{cases} 
+      \frac{m_k}{(\sum_{j=1}^K m_j)+\gamma}& \text{for existing tables} \\
+      \frac{\gamma}{(\sum_{j=1}^K m_j)+\gamma} & \text{for a new table } k=K+1
+   \end{cases}\text{.}
+\end{equation}
+Here, $K$ denotes the number of tables already occupied. For different views such as the Stick-Breaking construction refer to \cite{Teh04hierarchicaldirichlet,DBLP:phd/dnb/Kling16,frigyik2010introduction}.
+Formally, the Dirichlet process is defined as follows.
+\begin{definition}{Dirichlet process}\label{DP} Let $G$ be a probability measure over a measurable space $\theta$. $G$ is distributed according to a Dirichlet process with base measure $H$ and scaling parameter $\gamma$, write $G \sim DP(\gamma, H)$, if for any partition $(A_1,...,A_N)$ of $H$ \cite{ferguson73,Teh04hierarchicaldirichlet,DBLP:phd/dnb/Kling16}:
+\begin{equation}
+(G(A_1),...,G(A_N)) \sim Dir(\gamma H(A_1),...,\gamma H(A_N))
+\end{equation}
+\end{definition}
+As outlined, DP mixture models can open up new clusters when necessary \cite{Teh04hierarchicaldirichlet}. Then, the cluster parameters are selected dependening on a common base distribution $G_0$. However, such base distributions are often smooth. This is a problem when components should be shared as the probability of drawing the same component twice would then equal zero \cite{Teh04hierarchicaldirichlet, DBLP:phd/dnb/Kling16}. That is, no topic could be chosen twice. Therefore, $G_0$ is itsself drawn from a DP mixture which couples "document-specific measures on the topic space" \cite{DBLP:phd/dnb/Kling16}. This way, components can be shared by groups \cite{Teh04hierarchicaldirichlet} and, thus, topics between documents. \par
+As the HDP model uses multiple Dirichlet Processes it is natural to extend the metaphors used to explain the DP to explain its generative process.
+The CRP is extendend to the Chinese Restaurant Franchise (CRF) \cite{Teh04hierarchicaldirichlet}. Instead of a single restaurant, multiple franchise restaurants are considered. Every restaurant stands for a document-level Dirichlet Process. Furthermore, all of the restaurants share an infinite set of dishes, the gobal menu. This corresponds documents sharing a set of topics in the HDP topic model.
+Customers correspond to words. They enter the restaurant and choose a table as in the CRP \cite{DBLP:phd/dnb/Kling16}. Again, a table is chosen with probability $\frac{m_k}{(\sum_{j=1}^k m_j)+\alpha}$ proportional to the number of people already sitting there. A new one is opened up with probability $\frac{\alpha}{(\sum_{j=1}^k m_j)+\alpha}$ dependent on the scaling parameter $\alpha$. When a new table is opened in the CRF, a single dish is chosen which is served to all customers who opt to sit at the table \cite{Teh04hierarchicaldirichlet}. The dish is chosen with a probability proportional to the number of tables across all restaurants already serving it \cite{DBLP:phd/dnb/Kling16}. A new dish is chosen according to scaling parameter $\gamma$. Let $n_k$ denote the number of tables serving dish $k$ across all restaurants. Again, a random variable $X$ can be defined which indicates the probability that dish $k$ is chosen. It is distributed as follows \cite{xinggm}.
+\begin{equation}
+P(X=k) = \begin{cases} 
+       \frac{n_k}{(\sum_{j=1}^K n_j)+\alpha}& \text{for dishes, which have already been served} \\
+      \frac{\gamma}{(\sum_{j=1}^K n_j)+\gamma}& \text{for a new dish } k=K+1
+   \end{cases}
+\end{equation}, where K denotes the number of unique dishes already served.
+\par
+
+\begin{figure}[t]
+\label{fig8}
+	\centering
+\begin{tikzpicture}[x=1cm,y=0.8cm]
+
+  % Nodes
+  \node[obs]                   (w)      {$w$} ; %
+  \node[latent, above=of w]    (phi)      {$\phi_{mn}$} ; %
+  \node[latent, above=of phi]  (gj) {$G_j$}; %
+  \node[latent, above=of gj] (gzero)  {$G_0$}; %
+  \node[latent, right=of gj] (alpha) {$\alpha$};
+  \node[latent, above=of gzero] (h) {$H$};
+  \node[latent, right=of gzero]    (gamma)  {$\gamma$}; %
+
+  % Edges
+  \edge {h} {gzero} ;
+  \edge {gzero} {gj} ;
+  \edge {gj} {phi} ;
+  \edge {phi} {w} ;
+  \edge {alpha} {gj} ;
+  \edge {gamma} {gzero} ;
+  
+  % Plates
+  \plate {plate1} {(w)(phi)} {$N$} ;
+  \plate {} {(w)(phi)(gj)(plate1.north east)(plate1.south east)} {$M$};
+
+\end{tikzpicture}
+
+	\caption{Plate notation of the HDP model as adopted from Kling \cite{DBLP:phd/dnb/Kling16} and Teh et al. \cite{Teh04hierarchicaldirichlet}. Variables with grey background are observed, while such with white background are hidden. Plates indicate repitition.}
+\end{figure}
+
+Accordingly, the generative process of the HDP is defined as \cite{Teh04hierarchicaldirichlet,DBLP:phd/dnb/Kling16}:
+\begin{enumerate}
+\item Sample the global topic measure $G_0$ from a Dirichlet Process with concentration parameter $\gamma$ and Dirichlet prior $H \sim Dir(\beta)$.
+\begin{equation}
+G_0 \sim DP(\gamma,H)
+\end{equation}
+\item Draw a document-specific measure $G_m$ for every document from a Dirichlet Process with scaling parameter $\alpha$ and $G_0$ as base measure
+\begin{equation}
+G_m \sim DP(\alpha,G_0)
+\end{equation}
+\item For every word $w_{mn}$, in document $m$ draw a multinomial topic-word distribution $\phi_{mn}$ from $G_m$ and the word $w_{mn}$ from $\phi_{mn}$
+\begin{equation}
+\phi_{mn} \sim G_j
+\end{equation}
+\begin{equation}
+w_{mn} \sim \phi_{mn}
+\end{equation}
+\end{enumerate}
+
+As for LDA, there exist different approximative inference schemes for HDP as the actual inference of the parameters is intractable. Gibbs sampling and variational inference schemes can be tailored to fit the infinite probability measures in the HDP \cite{DBLP:phd/dnb/Kling16}. Again, the reader is referred to \cite{Teh04hierarchicaldirichlet,DBLP:phd/dnb/Kling16} for Gibbs sampling and \cite{DBLP:phd/dnb/Kling16} for variational inference.
+
+\subsubsection{Hierarchical multi-Dirichlet Process}
+The previously introduced topic models have only considered the textual data of documents \cite{DBLP:phd/dnb/Kling16}. However, especially for social data, there exists contextual data which surrounds documents, e.g. timestamps or authorship information \cite{DBLP:phd/dnb/Kling16}, which can aid in finding the latent topics. In the following, the Hierarchical multi-Dirichlet Process (HMDP) model developed by Kling \cite{DBLP:phd/dnb/Kling16} is introduced which allows for context inclusion by extending the HDP \cite{Teh04hierarchicaldirichlet} for arbitary contexts \cite{DBLP:phd/dnb/Kling16}. \par
+In the HMDP, context is described by context variables can have four different natures \cite{DBLP:phd/dnb/Kling16}.
+\begin{itemize}
+\item Discrete context variables do not have a pre-defined ordering \cite{DBLP:phd/dnb/Kling16} and include, for example, an article identifier specifying the article associated with a comment.
+\item Linear and continuous context variables can be ordered \cite{DBLP:phd/dnb/Kling16} and include, for example, a timestamp.
+\item Spherical context variables are commonly geographical locations \cite{DBLP:phd/dnb/Kling16}.
+\item Cyclic context variables are commonly of temporal nature \cite{DBLP:phd/dnb/Kling16}. Cyclic typically refers to daily, weekly, monthly or annual cycles \cite{DBLP:phd/dnb/Kling16}.
+\end{itemize}
+For a review of other context-aware models, the reader is referred to \cite{DBLP:phd/dnb/Kling16}. \\
+In the HMDP model, context variables are treated independently and serve as a storage of "the location of each document in the context space" \cite{DBLP:phd/dnb/Kling16}. An example of such a \textit{context space} is a timeline, where the corresponding \textit{context variable} can be the timestamp of a comment. Documents with similar context variables in a context space are grouped into \textit{context groups}. Thus, every document is in exactly one context group per context space.  
+Context groups are furthermore related to \textit{context clusters}. For discrete context variables, the relationship is 1:1 where a context groups parent is the context cluster of the same index. For linear and cyclic variables, it is 1:N where the parents of the context group are now not only the context cluster with the same index but also its adjacent clusters. The benefit of context clusters is that they "are associated with topic distributions which can be arbitrarily mixed to obtain the prior for the documents of a context group" \cite{DBLP:phd/dnb/Kling16}. That is, documents of the same context group are believed to have a similar topic distribution. This is not possible in the standard Dirichlet Process and is better illustrated when the definition of the \textit{Multi-Dirichlet Process} \cite{Kling:2014:DNG:2556195.2556218} (MDP) is compared to the one of a standard Dirichlet Process. \par
+Recall the definition of the \hyperref[DP]{DP}. $G \sim DP(\gamma, H)$ is dependent on the scaling parameter $\gamma$ and the base measure $H$. In the MPD however, not only one base measure and scaling parameter is considered but a set of parent measures $G_1,...,G_P$ with associated scaling parameters $\alpha_1,...,\alpha_P$. With \begin{equation}
+A = \sum_{p=1}^P \quad \quad \eta_p = \frac{\alpha_p}{A} 
+\end{equation}
+the MDP can be alternatively understood as a DP with base measure $H = \sum_{p=1}^P \eta_pG_p$, i.e. "the weighted sum of parent distributions, and concentration parameter A" \cite{Kling:2014:DNG:2556195.2556218}, and, thus, as $DP(A, H)$ \cite{Kling:2014:DNG:2556195.2556218}.
+Formally the MDP is defined as follows.
+\begin{definition}{Multi-Dirichlet Process \cite{Kling:2014:DNG:2556195.2556218}}
+Let $G_1,...,G_P$ be probability measures on a standard Borel space $(\Theta, \mathcal{B})$ with associated scaling parameters $\alpha_1,...,\alpha_P$.
+A probability measure $G$ over $(\Theta, \mathcal{B})$, which for all finite measurable partitions $(A_1,...,A_r)$ of $\Theta$ yields a Dirichlet-distributed random vector \begin{equation}
+(G(A_1),...,G(A_r)) \sim Dir(\sum_{p=1}^P\alpha_pG_p(A_1),...,\sum_{p=1}^P\alpha_pG_p(A_r)
+\end{equation} is called Multi-Dirichlet Process, write $MDP(\alpha_1,...,\alpha_P,G_1,...,G_P)$.
+\end{definition}
+Translating this a comparison of HMDP and HDP, the distribution of topics in a document in the HMDP is not only influenced by a single base measure but by a mixture of measures depending on contextual information. The generative process in the HMDP is defined according to \cite{DBLP:phd/dnb/Kling16} as follows.
+
+\begin{figure}[t]
+\label{fig3}
+	\centering
+\begin{tikzpicture}[x=1cm,y=0.8cm]
+
+  % Nodes
+  \node[obs]                   (w)      {$w$} ; %
+  \node[latent, above=of w]    (phi)      {$\phi_{mn}$} ; %
+  \node[latent, above=of phi]  (gmd)    {$G_m^d$} ;%
+  \node[obs, left= of gmd]     (gmf)    {$G_{mf}$} ;%
+  \node[latent, right=of gmd]  (zeta)   {$\zeta$} ;%
+  \node[latent, right=of zeta] (eps)    {$\epsilon$} ;%
+  \node[latent, above=of gmd]  (gfjc)   {$G_{fj}^c$} ;%
+  \node[latent, left=of gfjc]  (eta)    {$\eta_{fi}$} ;%
+  \node[latent, right=of gfjc] (azero)  {$\alpha_0$} ;%
+  \node[latent, right=of azero] (aone)  {$\alpha_1$} ;%
+  \node[latent, above=of gfjc]  (gzero) {$G_0$} ;%
+  \node[latent, left=of eta]  (delta) {$\delta_f$} ;%
+  \node[latent, right=of gzero] (gamma) {$\gamma$} ;%
+  \node[latent, above=of gzero] (h)     {$H$} ;%
+  \node[latent, right=of h]     (beta)  {$\beta_0$} ;%
+
+  % Edges
+  \edge {phi} {w} ; %
+  \edge {gmd} {phi} ; %
+  \edge {gmf} {gmd} ; %
+  \edge {zeta} {gmd} ; %
+  \edge {eps} {zeta} ; %
+  \edge {gfjc} {gmd} ; %
+  \edge {eta} {gmd} ; %
+  \edge {azero} {gfjc} ; %
+  \edge {aone} {gmd} ; %
+  \edge {gzero} {gfjc} ; %
+  \edge {delta} {eta} ; %
+  \edge {gamma} {gzero} ; %
+  \edge {h} {gzero} ; %
+  \edge {beta} {h} ; %
+  
+  % Plates
+  \plate {plate1} {(w)(phi)} {$N$} ;%
+  \plate {plate2} {(gmf)} {$F$} ; %
+  \plate {plate3} {(eta)} {$A_f$} ; %
+  \plate {plate4} {(gfjc)} {$C_f$} ; %
+  \plate {plate5} {(gmf)(gmd)(phi)(w)(plate1.south east)(plate2.south)} {$M$}
+  {\tikzset{plate caption/.append style={above=5pt of #1.north west}}
+  \plate {plate6} {(delta)(eta)(gfjc)(plate3.south)(plate4.south)} {$F$}}
+  
+
+\end{tikzpicture}
+
+	\caption{Plate notation of the HMDP model as adapted from Kling \cite{DBLP:phd/dnb/Kling16}. Variables with grey background are observed, while such with white background are hidden. Plates indicate repitition. See \hyperref[hmdpvars]{Appendix} for a table of variables.}
+\end{figure}
+
+\begin{enumerate}
+\item Draw a global topic distribution $G_0$ from a DP with a symmetric Dirichlet distribution $H$ over the topic space as base measure:
+\begin{equation}
+G_0 \sim DP(\gamma, H) \quad \quad H = Dir(\beta)
+\end{equation}
+\item For every context space $f$ of the $F$ context spaces and every of the $C_f$ context clusters of the context space, draw a topic distribution for each context cluster $j$:
+\begin{equation}
+G_j^c \sim DP(\alpha_0,G_0)
+\end{equation}
+\item Context spaces can have different strengths on the document topics. For each context space, the strength of influence is stored in $\zeta$, which is drawn from a Dirichlet distribution:
+\begin{equation}
+\zeta \sim Dir(\epsilon)
+\end{equation}
+\item For each context cluster within a group draw a multinomial $\eta_{fi}$ from a symmetric Dirichlet distribution with parameter $\delta_f$, which governs its influence:
+\begin{equation}
+\eta_{fi} \sim Dir(\delta_f)
+\end{equation}
+\item For every document $m$ a document specific topic distribution is sampled from a multi-Dirichlet Process. Here $\alpha\boldsymbol{\xi\eta}$ is shorthand for the vector of mixing proportions and $\boldsymbol{G^c}$ for the cluster-specific base measure of parent clusters.
+\begin{equation}
+G_m^d \sim MDP(\alpha_1\boldsymbol{\xi\eta},\boldsymbol{G^c})
+\end{equation}
+\item For every of the $N_m$ words of $m$, a multinomial topic-word distribution $\phi_{mn}$ is drawn from the document's topic distribution $G_m^d$, from which a word $w_{mn}$ is then drawn.
+\begin{equation}
+\phi_{mn} \sim G_m^d
+\end{equation}
+\begin{equation}
+w_{mn} \sim \phi_{mn}
+\end{equation}
+\end{enumerate}
+\par
+The HMDP implementation used in this thesis \footnote{\url{https://github.com/ckling/promoss}} employs collapsed variational inference and and requires a truncation $K$ of topics.
+
+\subsubsection{Markov Cluster Algorithm}
+\begin{algorithm}[H]
+\label{mclalg}
+\caption{The Markov Cluster algorithm as outlined in \cite{vandongen00}}
+\begin{algorithmic}
+\REQUIRE (normalized) square Matrix $M$ of order $n$, power parameter $p$, inflation parameter $r$
+\REPEAT
+\STATE Expand: $M \leftarrow M^p$
+\STATE Inflate: $m_{ij} \leftarrow \frac{m_{ij}^r}{\sum_{k=1}^n m_{kj}^r}$
+\UNTIL{$M$ is (nearly-) idempotent}
+\STATE Read clusters from $M$
+\end{algorithmic}
+\end{algorithm}
+The Markov Cluster Algorithm \cite{vandongen00} (MCL) is different from the previously presented models. It is a graph-clustering algorithm and seeks to find groups in graphs which are believed to naturally occur \cite{vandongen00}. It is not focused on the specific notion of \textit{topics} or documents in general. Nevertheless, its viability for the task of topic clustering has been shown \cite{DBLP:conf/ecir/AkerKBPBHG16}. Furthermore, the MCL is able to determine the number of clusters automatically \cite{vandongen00}. The fundamental idea of the MCL is best described with a quote. Let $G = (V,E)$ be a graph. 
+\begin{quote}
+"A random walk \footnote{A finite and time-reversible markov chain \cite{Lovasz1996}} in $G$ that visits a dense cluster will likely not leave the cluster until many of its vertices have been visited" \cite{vandongen00}. 
+\end{quote}
+In the MCL, a random walk is interpreted as simulating flow within a graph. Flow in the natural groups of a graph will remain strong, while flow between the natural groups will vanish over time revealing borders between groups \cite{vandongen00}. To illustrate this, let us consider a metaphor used by van Dongen \cite{vandongen00}. Imagine a car driver driving around aimlessly between a set of crossings and turns denoting vertices via streets denoting edges and through different districts denoting natural groups. Inside a district there are many crossings connected by viable roads, while districts themselves are connected only by very few roads. Naturally the driver will remain within a district for a substantial amount of time. \par
+In order to find groups, the graph is first transformed into a Markov graph. The MCL algorithm then works on the the (single-step) transition matrix $M$ associated with the Markov graph. Flow is simulated by Markov transition where the transition matrix is repeatedly raised to the power of the parameter $p$ which is called \textit{expansion}. For comment clustering, it has been reported that $p > 2$ results in too few clusters \cite{DBLP:conf/ecir/AkerKBPBHG16}. However, repeated Markov transitions alone are not sufficient for clustering, as the Markov process lacks the exhibition of a cluster structure \cite{vandongen00}. Thus, a second operation enabled by an \textit{inflation operator} is added and conversely called \textit{inflation}. Both expansion and inflation promote flow in natural groups \cite{vandongen00}. The inflation operator is based on the Hadamard product $A \circ B$ given by the element-wise multiplication of $A$ and $B$ as $(A \circ B)_{ij} = (A)_{ij} (B)_{ij}$. When applied to two identical matrices as in the MCL, this is equivalent to raising each element of the matrix to the power of two. In the MCL, it is not restricted to the power of two but variably determined by the inflation parameter $r$. Furthermore, a normalization step ensures the stochasticness of $M$ at the end of every iteration. An inflation parameter $r \in (0,1)$ induces column-homogeneity of $M$ and $r \in (1,\infty)$ increases inhomogeneinity \cite{vandongen00}. A Matrix $M$ being column-homogeneous means that the non-zero values of every column are equal \cite{vandongen00}. In practice, $r \geq 2$ has been reported to result in too many clusters \cite{DBLP:conf/ecir/AkerKBPBHG16}. The inflation operator is formally defined \cite{vandongen00} as follows.
+\begin{definition}{Inflation operator $\Gamma_r$}
+Let $M \in \mathbb{R}^{k \times l}$. The inflation operator $\Gamma_r : \mathbb{R}^{k \times l} \rightarrow \mathbb{R}^{k \times l}$ with power coefficient r is defined by \cite{vandongen00}:
+\begin{equation}
+(\Gamma_rM)_{ij} = \frac{m_{ij}^r}{\sum_{k=1}^n m_{kj}^r}
+\end{equation}
+\end{definition}
+Both steps, expansion and inflation, are in theory repeated until $M$ is idempotent, i.e. does not change anymore. In practice, a limited of maximum iterations is used \cite{DBLP:conf/ecir/AkerKBPBHG16}. In the end, the clusters can be read of the rows of the matrix $M$.
+To sum it up, \hyperref[mclalg]{the algorithm} consists of two operations: \textbf{Expansion}, which allows flow between groups, and \textbf{inflation}, which promotes flow within groups and limits flow across groups \cite{vandongen00, DBLP:conf/ecir/AkerKBPBHG16}. A maintained implementation is available \footnote{\url{https://micans.org/mcl/}} which uses pruning for performance reasons.
+
+\subsubsection{Overview}
+% checkmark
+\def\checkmark{\tikz\fill[scale=0.4](0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;}
+
+\begin{table}[H]
+\centering
+\label{properties}
+\caption{Properties fulfilled by introduced models. $^1$ Implicitely.}
+\begin{tabular}{|l|cc|}
+\hline
+Model & Able to learn no. of groups & Context-awareness\\ \hline
+LDA & - & -\\ 
+HDP & \checkmark & -\\
+HMDP & \checkmark & \checkmark \\
+MCL & \checkmark & (\checkmark)$^1$ \\
+\hline
+\end{tabular}
+\end{table}
+Distinction can be made in different senses. LDA \cite{DBLP:journals/jmlr/BleiNJ03}, HDP \cite{Teh04hierarchicaldirichlet} and HMDP \cite{DBLP:phd/dnb/Kling16} are categorized as topic models \cite{DBLP:journals/jmlr/BleiNJ03, DBLP:phd/dnb/Kling16, Crain2012, DBLP:phd/dnb/Kling16} and the MCL \cite{vandongen00} as a graph-clustering algorithm \cite{vandongen00}. LDA requires the number of topics to be known a priori \cite{DBLP:journals/jmlr/BleiNJ03}. All other models can determine it automatically \cite{Teh04hierarchicaldirichlet, DBLP:phd/dnb/Kling16, vandongen00}. LDA \cite{DBLP:journals/jmlr/BleiNJ03} and HDP \cite{Teh04hierarchicaldirichlet} only consider textual information. MCL and HMDP can be used to include context. The MCL does not explicitely use contextual information but context can implicitely be included into the Markov graph build-up by similarity measures based on datapoint relationships, for example whether two comments are in the same thread \cite{DBLP:conf/ecir/AkerKBPBHG16}. The HMDP \cite{DBLP:phd/dnb/Kling16} explicitely models context information in its generative process \cite{DBLP:phd/dnb/Kling16}.
+
+\subsection{Linear Regression}
+The Markov Cluster Algorithm implementation used in \cite{DBLP:conf/ecir/AkerKBPBHG16} and reimplemented in this thesis uses a linear regression model to weight edges between two comment nodes by their similarity. 
+Linear regression in the context of Machine Learning is a supervised learning model \cite{Bishop:2006:PRM:1162264}. It uses a training set of $m$ observations $\{X_i\} \text{ with } i = 1,...,m$ and associated target values $\{t_i\}$ with the goal to predict $t$ for a new observation $x$ with the trained model. From a probabilistic point of view this is equivalent to modeling the distribution of conditional probabilities $P(t|x)$ \cite{Bishop:2006:PRM:1162264} which "minimize[s] the expected value of a suitably chosen loss function" \cite{Bishop:2006:PRM:1162264}. Linear regression can be such that it considers a linear combination of input variables to make predictions \cite{Bishop:2006:PRM:1162264}.
+\begin{equation}
+y(x,w) = w_0 + w_1x_1+ ... + w_nx_n \text{ where } x = (x_1,...,x_n)^T \text{ and } w = (w_0,...,w_n)^T
+\end{equation} This can be extended to a linear combination of nonlinear basis functions $\phi_j(x)$ \cite{Bishop:2006:PRM:1162264}
+\begin{equation}
+y(x,w) = w_0 + \sum_{j=1}^{M-1} w_j\phi_j(\mathrm{x})
+\end{equation}
+The purpose of training is to find the parameters $w$ and thereby the equation which fits the training set of observations and target values best.
+The set of observations can be represented as a matrix $A \in \mathbb{R}^{m \times n}$ where each column represents an input variable and each row one observation. The set of target values can be represented as a column-vector $b \in \mathbb{R}^m$, where each element $b_i$ represents the labeled target value of the observation of row $i$ of $A$. Finding the parameter values $w \in \mathbb{R}^n$ then equals solving the equation system $Aw = b$. However, often holds true $rk(A) \neq rk(A,b)$\footnote{The rank of a matrix is defined as the dimension of the image \cite{goetz} or the maximum number of linearly independent rows.} which means that the equation system does not have a solution \cite{goetz}. Thus, the objective is to find a set of parameters which approximates the equation system best, i.e. minimizes the residual $Aw - b$. This can be formulated as the Least Squares problem \cite{goetz}.
+\begin{definition}{Least Squares Problem}
+Let $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$. The problem of finding $w \in \mathbb{R}^n$ such that \begin{equation}
+\sum_{i=1}^m |b_i - (Aw)_i|^2 \rightarrow min \quad \text{or} \quad min_{w\in \mathbb{R}^n} ||b - Aw||_2^2
+\end{equation} is called Least Squares Problem and $w = \argmin_{w\in \mathbb{R}^n} ||b - Aw||_2^2$ is called Least Squares solution \cite{goetz}. $w \in \mathbb{R}^n$ then also solves the \textit{normal equation} \begin{equation}
+A^TAw = Ab
+\end{equation}
+\end{definition}
+The Least Squares Problem can also be formulated such that $w$ follows certain constraints. For example, the Non-negative Least Squares Problem constrains $w$ to be positive. The least squares solution is then 
+\begin{equation}
+w = \argmin_{w\in \mathbb{R}^n} ||b - Aw||_2^2 \text{ where } w \geq 0\text{.}
+\end{equation} Arbitrary bounds for $w$ can be defined accordingly.
+\newpage

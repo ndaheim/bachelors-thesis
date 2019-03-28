@@ -1,0 +1,126 @@
+\documentclass[m,bachelor,binding,palatino,twoside]{WeSTthesis}
+% Please read the README.md file for additional information on the parameters and overall usage of WeSTthesis
+
+\usepackage[english,ngerman]{babel}		% English and new German spelling
+\usepackage[utf8]{inputenc}           % correct input encoding
+\usepackage[T1]{fontenc}              % correct output encoding
+\usepackage{graphicx}					      	% enhanced support for graphics
+\usepackage{tabularx}				      		% more flexible tabular
+\usepackage{amsfonts}					      	% math fonts
+\usepackage{amssymb}					      	%	math symbols
+\usepackage{amsmath}					      	% overall enhancements to math environment
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+\usepackage{import}
+\usepackage{hyperref}
+\usepackage{subfigure}
+\usepackage{enumitem} % allows resuming enums
+\usepackage{amsthm}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+\usepackage{mathrsfs}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{mdframed}
+\usepackage{adjustbox}
+\usepackage{pbox}
+\usepackage[toc,page]{appendix}
+\usepackage{titlesec}
+
+\setlength{\parskip}{0.25\baselineskip}
+
+% allows level under subsubsection, see https://tex.stackexchange.com/questions/60209/how-to-add-an-extra-level-of-sections-with-headings-below-subsubsection
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{5}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\author{Nico Daheim}
+
+\title{Probabilistic Topic Models for Multi-Article News Comment Summarization}
+
+\degreecourse{Informatik}
+
+\firstreviewer{Prof.\ Dr.\ Steffen Staab}
+\firstreviewerinfo{Institute for Web Science and Technologies}
+
+\secondreviewer{Dr.\ Chandan Kumar}
+\secondreviewerinfo{Institute for Web Science and Technologies}
+
+\englishabstract{
+Expression of opinion on current topics is a part of human nature and has happened on many platforms throughout history. In times of the internet, comment sections under textual ressources are a common platform. Many news outlets, for example, offer users the possibility to comment on their articles. Their comment sections provide an insight into public opinion, which is valuable for corporations, policy makers and analysts. However, due to the scale and diversity of comments under news articles, it is not trivial to assess public opinion quickly. Thus, filtering is already commonly found in comment sections, most notably through up- or downvoting, but often fails to represent opinion correctly. This sparks a need for computational methods of filtering. 
+Automatic text summarization has been explored since the 1950s as a way of presenting a concise overview of textual ressources and found successful application for user-contributed comments, which saves users and analysts effort.
+Thus, this thesis investigates extractive text summarization in the context of news article comments of multiple articles.
+In order to present a comprehensive overview of opinion, we choose to outline the most significant topics discussed through a label, sentiment and extracted comments. The focus of the work lies on grouping comments by an unknown number of discussed topics. The context-aware topic model Hierarchical multi-Dirichlet Process (HMDP) is compared to the Markov Cluster Algorithm (MCL) and Latent Dirichlet Allocation (LDA). An evaluation based on a gold standard, for which a creation method is outlined, shows that the HMDP performs best. This supports the thesis that context inclusion is able to improve the topic modeling of sparse comments. Furthermore, an unsupervised topic labeling algorithm is outlined as part of summary generation. \clearpage
+}
+
+\germanabstract{
+Es liegt in der Natur des Menschen, Meinung zu aktuellen Themen zu äußern. Heutzutage geschieht dies oft im Internet. Newsanbieter, zum Beispiel, bieten unter ihren Artikeln häufig eine Kommentarfunktion, die Nutzer zur Meinungsäußerung verwenden können. Dadurch bieten solche Kommentarbereiche einen Einblick in die Meinung der Öffentlichkeit, welche sich als wertvoll für Unternehmen und auch politische Entscheidungsträger darstellt. Die Masse und Diversität der Daten behindert allerdings eine schnelle Analyse. Daher finden sich in Kommentarbereichen häufig Filtermethoden, wie zum Beispiel das up- und downvoten von Kommentaren. Da solche Filtermethoden jedoch häufig ein inkorrektes Bild der Meinung widerspiegeln, werden computergestützte Lösungen benötigt. Eine solche Lösung ist die automatisierte Textzusammenfassung, die seit den 1950ern als Möglichkeit der Erstellung eines prägnanten Überblicks erforscht wird und Anwendung für Nutzerkommentare gefunden hat. In dieser Arbeit wird die automatisierte Zusammenfassung von Kommentaren unter mehreren Newsartikeln erforscht. Um einen umfassenden Überblick zu bieten, präsentiert die gewählte Methode die wichtigsten Themen in den Kommentaren in der Form eines Labels, einer Visualisierung des "sentiments" und extrahierten Kommentaren. Hierbei liegt der Fokus auf dem Gruppieren der Kommentare anhand der diskutierten Themen. Dazu wird das topic model Hierarchical multi-Dirichlet Process (HMDP), welches auch den Kontext der Kommentare miteinbezieht, mit dem Markov Cluster Algorithm (MCL) und Latent Dirichlet Allocation (LDA) verglichen. Mit einer auf einem Gold Standard, für den ein Erstellungsschema vorgestellt wird, basierenden Evaluation konnten wir zeigen, dass das HMDP die besten Ergebnisse liefert. Dies bestätigt die These, dass Kontextmodellierung das topic modeling von Kommentaren verbessern kann. Zudem wird ein Labelingalgorithmus vorgestellt, der unsupervised arbeitet. \clearpage
+}
+
+
+\begin{document}
+\pagenumbering{roman}
+\maketitle%prints the cover page  an empty page if two-sided print
+
+\section*{Acknowledgements}
+First of all, I want to thank my supervisors Prof. Dr. Steffen Staab and Dr. Chandan Kumar. Both have helped me greatly along the way of this thesis, from shaping its topic to all the constructive criticism over the course of implementation and writing.
+I also want to thank Jun Sun for all his help and guidance. I have enjoyed being a part of the CUTLER project together with Jun and Dr. Chandan Kumar, where I found great interest in data analysis and Natural Language Processing.
+Furthermore, I want to thank Dr. Zeyd Boukhers for offering consultation on topic model evaluation.
+Lastly, I want to thank all of my friends and family, who have supported me throughout the course of my bachelors studies, most of all my grandparents Elli and Hilarius for all the love and support.
+\cleardoublepage
+
+\selectlanguage{english}
+
+\tableofcontents%
+
+\cleardoublepage%
+
+% list of figures
+\listoffigures
+\listoftables
+\listofalgorithms
+% \varclearpage
+\cleardoublepage
+
+\pagenumbering{arabic}
+
+% beginning of the actual text section
+\section{Introduction}
+\import{./}{introduction.tex}
+\newpage
+\section{Background \& Related Work}
+\import{./}{background_relwork.tex}
+
+\section{Approach}
+\import{./}{methodology.tex}
+
+\section{Topic Modeling \& Clustering}
+\import{./}{tm_clustering.tex}
+
+\section{Topic Modeling \& Clustering Evaluation}
+\import{./}{evaluation.tex}
+
+\section{Summary Generation}
+\import{./}{summary.tex}
+
+\section{Conclusion \& Future Work}
+\import{./}{conclusion.tex}
+
+\bibliographystyle{ieeetr}
+\bibliography{bib}
+
+\newpage
+
+\section{Appendix}
+\import{./}{appendix.tex}
+
+\end{document}
